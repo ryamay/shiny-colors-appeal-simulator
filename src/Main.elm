@@ -1,4 +1,4 @@
-module Main exposing (Idol, Model, getStatus, idols, init, main, update, viewIdolPullDown)
+module Main exposing (Idol, MemoriesLevel, Model, getStatus, idols, main, update, viewIdolPullDown)
 
 import Browser
 import Html exposing (..)
@@ -26,6 +26,7 @@ type alias Model =
     , center : FesIdol
     , dancer : FesIdol
     , visualist : FesIdol
+    , idolAppealParam : IdolAppealParam
     }
 
 
@@ -39,13 +40,30 @@ type alias FesIdol =
     }
 
 
+type alias IdolAppealParam =
+    { idol : Idol
+    , appealCoefficient : AppealCoefficient
+    , vocal : Float
+    , dance : Float
+    , visual : Float
+    }
+
+
+type AppealCoefficient
+    = Perfect
+    | Good
+    | Normal
+    | Bad
+
+
 init : Model
 init =
-    { leader = FesIdol Mano 500 500 500 300 1
+    { leader = FesIdol Meguru 500 500 500 300 1
     , vocalist = FesIdol Hiori 500 500 500 300 1
-    , center = FesIdol Meguru 500 500 500 300 1
+    , center = FesIdol Mano 500 500 500 300 1
     , dancer = FesIdol Kogane 500 500 500 300 1
     , visualist = FesIdol Kaho 500 500 500 300 1
+    , idolAppealParam = IdolAppealParam Mano Perfect 1.0 1.0 1.0
     }
 
 
@@ -71,25 +89,188 @@ update msg model =
 view : Model -> Html Msg
 view model =
     div []
-        [ table []
-            [ thead []
-                [ tr []
-                    [ th [] [ text "ポジション" ]
-                    , th [] [ text "Leader" ]
-                    , th [] [ text "Vocal担当" ]
-                    , th [] [ text "Center" ]
-                    , th [] [ text "Dance担当" ]
-                    , th [] [ text "Visual担当" ]
+        [ viewJudgeArea model
+        , viewAppealArea model
+        , div
+            []
+            [ table []
+                [ thead []
+                    [ tr []
+                        [ th [] [ text "ポジション" ]
+                        , th [] [ text "Leader" ]
+                        , th [] [ text "Vocal担当" ]
+                        , th [] [ text "Center" ]
+                        , th [] [ text "Dance担当" ]
+                        , th [] [ text "Visual担当" ]
+                        ]
+                    ]
+                , tbody []
+                    [ viewFesIdol model
+                    , viewFesIdolStatus model Vocal
+                    , viewFesIdolStatus model Dance
+                    , viewFesIdolStatus model Visual
+                    , viewFesIdolStatus model Vocal
+                    , viewFesIdolMemoriesLevel model
                     ]
                 ]
-            , tbody []
-                [ viewFesIdol model
-                , viewFesIdolStatus model Vocal
-                , viewFesIdolStatus model Dance
-                , viewFesIdolStatus model Visual
-                , viewFesIdolStatus model Vocal
-                , viewFesIdolMemoriesLevel model
+            ]
+        ]
+
+
+viewJudgeArea : Model -> Html msg
+viewJudgeArea model =
+    table []
+        [ thead []
+            [ tr []
+                [ th [] [ text "審査員タイプ" ]
+                , th [] [ text "Voアピール" ]
+                , th [] [ text "Daアピール" ]
+                , th [] [ text "Viアピール" ]
+
+                -- TODO: 思い出アピールの算出
+                -- , th [] [ text "思い出アピール" ]
                 ]
+            ]
+        , tbody []
+            [ viewJudge Vo model
+            , viewJudge Da model
+            , viewJudge Vi model
+            ]
+        ]
+
+
+viewJudge : AppealType -> Model -> Html msg
+viewJudge judgeType model =
+    tr []
+        [ td [] [ text (typeHeader judgeType) ]
+        , td [] [ text (String.fromInt (calcNormalAppeal model Vo judgeType)) ]
+        , td [] [ text (String.fromInt (calcNormalAppeal model Da judgeType)) ]
+        , td [] [ text (String.fromInt (calcNormalAppeal model Vi judgeType)) ]
+        ]
+
+
+calcNormalAppeal : Model -> AppealType -> AppealType -> Int
+calcNormalAppeal model appealType judgeType =
+    floor (basicCoefficent model appealType * appealPower model appealType)
+        * (if appealType == judgeType then
+            2
+
+           else
+            1
+          )
+
+
+appealPower : Model -> AppealType -> Float
+appealPower model appealType =
+    case appealType of
+        Vo ->
+            model.idolAppealParam.vocal
+
+        Da ->
+            model.idolAppealParam.dance
+
+        Vi ->
+            model.idolAppealParam.visual
+
+
+basicCoefficent : Model -> AppealType -> Float
+basicCoefficent model appealType =
+    floor (fesAppealBase model appealType * (1 + Basics.toFloat (allBuffs model) / 100) * (model.idolAppealParam.appealCoefficient |> toFloat)) |> Basics.toFloat
+
+
+fesAppealBase : Model -> AppealType -> Float
+fesAppealBase model appealType =
+    let
+        unitIdols =
+            [ model.leader, model.dancer, model.center, model.vocalist, model.visualist ]
+
+        appealer =
+            case List.filter (sameIdol model.idolAppealParam.idol) unitIdols of
+                idol :: _ ->
+                    idol
+
+                [] ->
+                    model.center
+
+        appealerStatus =
+            getStatus appealer (typeToStatus appealType) |> String.toFloat |> Maybe.withDefault 0
+
+        notAppealers =
+            List.filter ((==) appealer) unitIdols
+
+        statusSumOfNotAppealers =
+            List.map2 getStatus notAppealers (List.repeat (List.length notAppealers) (typeToStatus appealType)) |> List.filterMap String.toInt |> List.sum |> Basics.toFloat
+    in
+    floor (2.0 * appealerStatus + 0.5 * statusSumOfNotAppealers) |> Basics.toFloat
+
+
+sameIdol : Idol -> FesIdol -> Bool
+sameIdol idol fesIdol =
+    idol == fesIdol.idol
+
+
+toFloat : AppealCoefficient -> Float
+toFloat appealCoefficient =
+    case appealCoefficient of
+        Perfect ->
+            1.5
+
+        Good ->
+            1.1
+
+        Normal ->
+            1.0
+
+        Bad ->
+            0.5
+
+
+type AppealType
+    = Vo
+    | Da
+    | Vi
+
+
+typeHeader : AppealType -> String
+typeHeader appealType =
+    case appealType of
+        Vo ->
+            "Vo"
+
+        Da ->
+            "Da"
+
+        Vi ->
+            "Vi"
+
+
+allBuffs : Model -> Basics.Int
+allBuffs model =
+    -- TODO: バフの集計関数を作成する。いったんゼロ固定とする。
+    0
+
+
+viewAppealArea : Model -> Html msg
+viewAppealArea model =
+    table []
+        [ thead []
+            [ tr []
+                [ th [] [ text "アピールするアイドル" ]
+                , th [] [ text "アピール係数" ]
+                , th [] [ text "Vo倍率" ]
+                , th [] [ text "Da倍率" ]
+                , th [] [ text "Vi倍率" ]
+
+                -- TODO: 思い出アピールの算出
+                -- , th [] [ text "思い出アピール" ]
+                ]
+            ]
+        , tbody []
+            [ viewAppealIdolPulldown model
+            , viewAppealCoefficient
+            , viewAppealPower Vo model
+            , viewAppealPower Da model
+            , viewAppealPower Vi model
             ]
         ]
 
@@ -197,6 +378,19 @@ getStatus fesIdol status =
 
         MemoriesLevel ->
             String.fromInt fesIdol.memoriesLevel
+
+
+typeToStatus : AppealType -> FesIdolStatus
+typeToStatus appealType =
+    case appealType of
+        Vo ->
+            Vocal
+
+        Da ->
+            Dance
+
+        Vi ->
+            Visual
 
 
 statusHeader : FesIdolStatus -> String
