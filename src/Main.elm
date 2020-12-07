@@ -2,7 +2,7 @@ module Main exposing (Idol, MemoriesLevel, Model, getStatus, idols, main, update
 
 import Browser
 import Html exposing (..)
-import Html.Attributes exposing (selected, value)
+import Html.Attributes exposing (max, min, selected, step, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Html.Events.Extra as Events
 import Html.Extra as Html
@@ -12,6 +12,7 @@ import Html.Extra as Html
 -- MAIN
 
 
+main : Program () Model Msg
 main =
     Browser.sandbox { init = init, update = update, view = view }
 
@@ -56,6 +57,27 @@ type AppealCoefficient
     | Bad
 
 
+appealCoefficients : List AppealCoefficient
+appealCoefficients =
+    [ Perfect, Good, Normal, Bad ]
+
+
+appealCoefficientToString : AppealCoefficient -> String
+appealCoefficientToString appealCoefficient =
+    case appealCoefficient of
+        Perfect ->
+            "Perfect"
+
+        Good ->
+            "Good"
+
+        Normal ->
+            "Normal"
+
+        Bad ->
+            "Bad"
+
+
 init : Model
 init =
     { leader = FesIdol Meguru 500 500 500 300 1
@@ -73,13 +95,35 @@ init =
 
 type Msg
     = ChangeFesIdol FesUnitPosition FesIdolStatus String
+    | ChangeAppealer String
+    | ChangeAppealCoefficient String
+    | ChangeAppealPower AppealType String
 
 
 update : Msg -> Model -> Model
 update msg model =
     case msg of
+        -- TODO:モデルを更新する処理はまだ。
         ChangeFesIdol position status value ->
             model
+
+        ChangeAppealer appealer ->
+            model
+
+        ChangeAppealCoefficient appealCoefficient ->
+            model
+
+        ChangeAppealPower appealType power ->
+            -- TODO:ここは属性ごとに更新するメソッドにした方がいいのか？でもModel更新だけで良い気もする
+            case appealType of
+                Vo ->
+                    model
+
+                Da ->
+                    model
+
+                Vi ->
+                    model
 
 
 
@@ -91,29 +135,7 @@ view model =
     div []
         [ viewJudgeArea model
         , viewAppealArea model
-        , div
-            []
-            [ table []
-                [ thead []
-                    [ tr []
-                        [ th [] [ text "ポジション" ]
-                        , th [] [ text "Leader" ]
-                        , th [] [ text "Vocal担当" ]
-                        , th [] [ text "Center" ]
-                        , th [] [ text "Dance担当" ]
-                        , th [] [ text "Visual担当" ]
-                        ]
-                    ]
-                , tbody []
-                    [ viewFesIdol model
-                    , viewFesIdolStatus model Vocal
-                    , viewFesIdolStatus model Dance
-                    , viewFesIdolStatus model Visual
-                    , viewFesIdolStatus model Vocal
-                    , viewFesIdolMemoriesLevel model
-                    ]
-                ]
-            ]
+        , viewFesIdolArea model
         ]
 
 
@@ -137,6 +159,12 @@ viewJudgeArea model =
             , viewJudge Vi model
             ]
         ]
+
+
+
+{-
+   viewJudge : 審査員へのアピール値の計算・表示をするエリア。
+-}
 
 
 viewJudge : AppealType -> Model -> Html msg
@@ -250,7 +278,13 @@ allBuffs model =
     0
 
 
-viewAppealArea : Model -> Html msg
+
+{-
+   viewAppealArea : アピールするアイドル、PerFect/Good/Normal/Bad、Vo/Da/Vi倍率を選択するエリア
+-}
+
+
+viewAppealArea : Model -> Html Msg
 viewAppealArea model =
     table []
         [ thead []
@@ -266,11 +300,90 @@ viewAppealArea model =
                 ]
             ]
         , tbody []
-            [ viewAppealIdolPulldown model
-            , viewAppealCoefficient
-            , viewAppealPower Vo model
-            , viewAppealPower Da model
-            , viewAppealPower Vi model
+            [ tr []
+                [ td [] [ viewAppealIdolPulldown model ]
+                , td [] [ viewAppealCoefficient model ]
+                , td [] [ viewAppealPower Vo model ]
+                , td [] [ viewAppealPower Da model ]
+                , td [] [ viewAppealPower Vi model ]
+                ]
+            ]
+        ]
+
+
+viewAppealIdolPulldown : Model -> Html Msg
+viewAppealIdolPulldown model =
+    -- フェスユニットのアイドルを選択肢に表示するプルダウンを表示
+    select
+        [ Events.onChange ChangeAppealer ]
+        --(List.map (viewMemoriesLevelOption (getStatus fesIdol MemoriesLevel)) (List.range 0 5))
+        (List.map (viewIdolOption (toString model.idolAppealParam.idol)) (listFesUnitMember model))
+
+
+listFesUnitMember : Model -> List Idol
+listFesUnitMember model =
+    [ model.leader.idol, model.vocalist.idol, model.center.idol, model.dancer.idol, model.visualist.idol ]
+
+
+viewAppealCoefficient : Model -> Html Msg
+viewAppealCoefficient model =
+    select
+        [ Events.onChange ChangeAppealCoefficient ]
+        (List.map (viewAppealCoefficientOption (appealCoefficientToString model.idolAppealParam.appealCoefficient)) appealCoefficients)
+
+
+viewAppealCoefficientOption : String -> AppealCoefficient -> Html Msg
+viewAppealCoefficientOption selectedCoefficient appealCoefficient =
+    option
+        [ selected (appealCoefficientToString appealCoefficient == selectedCoefficient), value (appealCoefficientToString appealCoefficient) ]
+        [ text (appealCoefficientToString appealCoefficient) ]
+
+
+viewAppealPower : AppealType -> Model -> Html Msg
+viewAppealPower appealType model =
+    div []
+        [ input
+            [ type_ "range"
+            , Html.Attributes.min "0"
+            , Html.Attributes.max "10"
+            , step "0.1"
+            , value (appealPower model appealType |> String.fromFloat)
+            , onInput (ChangeAppealPower appealType)
+            ]
+            []
+        , text (appealPower model appealType |> String.fromFloat)
+        ]
+
+
+
+{-
+   viewFesIdolArea : フェスユニットのアイドル・アピール値を設定するエリア
+-}
+
+
+viewFesIdolArea : Model -> Html Msg
+viewFesIdolArea model =
+    div
+        []
+        [ table []
+            [ thead []
+                [ tr []
+                    [ th [] [ text "ポジション" ]
+                    , th [] [ text "Leader" ]
+                    , th [] [ text "Vocal担当" ]
+                    , th [] [ text "Center" ]
+                    , th [] [ text "Dance担当" ]
+                    , th [] [ text "Visual担当" ]
+                    ]
+                ]
+            , tbody []
+                [ viewFesIdol model
+                , viewFesIdolStatus model Vocal
+                , viewFesIdolStatus model Dance
+                , viewFesIdolStatus model Visual
+                , viewFesIdolStatus model Vocal
+                , viewFesIdolMemoriesLevel model
+                ]
             ]
         ]
 
