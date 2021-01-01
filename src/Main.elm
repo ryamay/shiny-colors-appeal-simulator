@@ -1,4 +1,4 @@
-module Main exposing (Idol, MemoriesLevel, Model, getStatus, idols, main, update, viewIdolPullDown)
+module Main exposing (Idol, MemoryLevel, Model, getStatus, idols, main, update, viewIdolPullDown)
 
 import Browser
 import Html exposing (..)
@@ -37,7 +37,7 @@ type alias FesIdol =
     , dance : Int
     , visual : Int
     , mental : Int
-    , memoriesLevel : Int
+    , memoryLevel : MemoryLevel
     }
 
 
@@ -47,6 +47,7 @@ type alias IdolAppealParam =
     , vocal : Float
     , dance : Float
     , visual : Float
+    , memoryCoefficient : Float
     }
 
 
@@ -100,12 +101,12 @@ toAppealCoefficient str =
 
 init : Model
 init =
-    { leader = FesIdol Meguru 500 500 500 300 1
-    , vocalist = FesIdol Hiori 500 500 500 300 1
-    , center = FesIdol Mano 500 500 500 300 1
-    , dancer = FesIdol Kogane 500 500 500 300 1
-    , visualist = FesIdol Kaho 500 500 500 300 1
-    , idolAppealParam = IdolAppealParam Mano Perfect 1.0 1.0 1.0
+    { leader = FesIdol Meguru 500 500 500 300 One
+    , vocalist = FesIdol Hiori 500 500 500 300 One
+    , center = FesIdol Mano 500 500 500 300 One
+    , dancer = FesIdol Kogane 500 500 500 300 One
+    , visualist = FesIdol Kaho 500 500 500 300 One
+    , idolAppealParam = IdolAppealParam Mano Perfect 1.0 1.0 1.0 0.0
     }
 
 
@@ -118,12 +119,12 @@ type Msg
     | ChangeAppealer String
     | ChangeAppealCoefficient String
     | ChangeAppealPower AppealType String
+    | ChangeMemoryAppealCoefficient String
 
 
 update : Msg -> Model -> Model
 update msg model =
     case msg of
-        -- TODO:モデルを更新する処理はまだ。
         ChangeFesIdol position status value ->
             updateFesIdol model position status value
 
@@ -165,6 +166,16 @@ update msg model =
             in
             { model | idolAppealParam = newParam }
 
+        ChangeMemoryAppealCoefficient memoryCoefficient ->
+            let
+                oldParam =
+                    model.idolAppealParam
+
+                newParam =
+                    { oldParam | memoryCoefficient = String.toFloat memoryCoefficient |> Maybe.withDefault 0.0 }
+            in
+            { model | idolAppealParam = newParam }
+
 
 updateFesIdol : Model -> FesUnitPosition -> FesIdolStatus -> String -> Model
 updateFesIdol model position status value =
@@ -189,8 +200,8 @@ updateFesIdol model position status value =
                 Mental ->
                     { oldIdol | mental = String.toInt value |> Maybe.withDefault 0 }
 
-                MemoriesLevel ->
-                    { oldIdol | memoriesLevel = String.toInt value |> Maybe.withDefault 0 }
+                MemoryLevel ->
+                    { oldIdol | memoryLevel = fromString value }
     in
     case position of
         Leader ->
@@ -261,9 +272,7 @@ viewJudgeArea model =
                 , th [] [ text "Voアピール" ]
                 , th [] [ text "Daアピール" ]
                 , th [] [ text "Viアピール" ]
-
-                -- TODO: 思い出アピールの算出
-                -- , th [] [ text "思い出アピール" ]
+                , th [] [ text "思い出アピール" ]
                 ]
             ]
         , tbody []
@@ -287,18 +296,63 @@ viewJudge judgeType model =
         , td [] [ text (String.fromInt (calcNormalAppeal model Vo judgeType)) ]
         , td [] [ text (String.fromInt (calcNormalAppeal model Da judgeType)) ]
         , td [] [ text (String.fromInt (calcNormalAppeal model Vi judgeType)) ]
+        , td [] [ text (String.fromInt (calcMemoryAppeal model judgeType)) ]
         ]
 
 
 calcNormalAppeal : Model -> AppealType -> AppealType -> Int
 calcNormalAppeal model appealType judgeType =
-    floor (basicCoefficent model appealType * appealPower model appealType)
-        * (if appealType == judgeType then
-            2
+    floor
+        (basicCoefficent model appealType (toFloat model.idolAppealParam.appealCoefficient)
+            * appealPower model appealType
+        )
+        * calcJudgeBuff appealType judgeType
 
-           else
-            1
-          )
+
+calcJudgeBuff : AppealType -> AppealType -> Int
+calcJudgeBuff appealType judgeType =
+    if appealType == judgeType then
+        2
+
+    else
+        1
+
+
+calcMemoryAppeal : Model -> AppealType -> Int
+calcMemoryAppeal model judgeType =
+    memoryAppealBase model judgeType model.idolAppealParam.memoryCoefficient
+
+
+memoryAppealBase : Model -> AppealType -> Float -> Int
+memoryAppealBase model judgeType memoryCo =
+    let
+        appealTypes =
+            [ Vo, Da, Vi ]
+
+        judgeBuffs =
+            List.map2 calcJudgeBuff appealTypes (List.repeat 3 judgeType)
+
+        unitIdolsMemoryLv =
+            [ model.leader.memoryLevel
+            , model.dancer.memoryLevel
+            , model.vocalist.memoryLevel
+            , model.visualist.memoryLevel
+            ]
+
+        unitBuff =
+            1.0
+                + (List.map convertToUnitBuff unitIdolsMemoryLv
+                    |> List.sum
+                  )
+    in
+    List.map2 (basicCoefficent model) appealTypes (List.repeat 3 memoryCo)
+        |> List.map2 (*) (List.repeat 3 (convertToMemoryPower model.center.memoryLevel))
+        |> List.map Basics.floor
+        |> List.map Basics.toFloat
+        |> List.map2 (*) (List.repeat 3 unitBuff)
+        |> List.map Basics.floor
+        |> List.map2 (*) judgeBuffs
+        |> List.sum
 
 
 appealPower : Model -> AppealType -> Float
@@ -314,9 +368,14 @@ appealPower model appealType =
             model.idolAppealParam.visual
 
 
-basicCoefficent : Model -> AppealType -> Float
-basicCoefficent model appealType =
-    floor (fesAppealBase model appealType * (1 + Basics.toFloat (allBuffs model) / 100) * (model.idolAppealParam.appealCoefficient |> toFloat)) |> Basics.toFloat
+basicCoefficent : Model -> AppealType -> Float -> Float
+basicCoefficent model appealType appealCoefficient =
+    floor
+        (fesAppealBase model appealType
+            * (1 + Basics.toFloat (allBuffs model) / 100)
+            * appealCoefficient
+        )
+        |> Basics.toFloat
 
 
 fesAppealBase : Model -> AppealType -> Float
@@ -407,9 +466,7 @@ viewAppealArea model =
                 , th [] [ text "Vo倍率" ]
                 , th [] [ text "Da倍率" ]
                 , th [] [ text "Vi倍率" ]
-
-                -- TODO: 思い出アピールの算出
-                -- , th [] [ text "思い出アピール" ]
+                , th [] [ text "思い出アピール" ]
                 ]
             ]
         , tbody []
@@ -419,6 +476,7 @@ viewAppealArea model =
                 , td [] [ viewAppealPower Vo model ]
                 , td [] [ viewAppealPower Da model ]
                 , td [] [ viewAppealPower Vi model ]
+                , td [] [ viewMemoryAppeal model ]
                 ]
             ]
         ]
@@ -429,7 +487,7 @@ viewAppealIdolPulldown model =
     -- フェスユニットのアイドルを選択肢に表示するプルダウンを表示
     select
         [ Events.onChange ChangeAppealer ]
-        --(List.map (viewMemoriesLevelOption (getStatus fesIdol MemoriesLevel)) (List.range 0 5))
+        --(List.map (viewMemoryLevelOption (getStatus fesIdol MemoryLevel)) (List.range 0 5))
         (List.map (viewIdolOption (toString model.idolAppealParam.idol)) (listFesUnitMember model))
 
 
@@ -468,9 +526,25 @@ viewAppealPower appealType model =
         ]
 
 
+viewMemoryAppeal : Model -> Html Msg
+viewMemoryAppeal model =
+    div []
+        [ viewMemoryAppealPullDown model.idolAppealParam.memoryCoefficient ]
+
+
+viewMemoryAppealPullDown : Float -> Html Msg
+viewMemoryAppealPullDown memoryAppealCoefficient =
+    select
+        [ Events.onChange ChangeMemoryAppealCoefficient ]
+        [ option [ selected (memoryAppealCoefficient == 0), value "0" ] [ text "なし" ]
+        , option [ selected (memoryAppealCoefficient == 0.5), value "1.0" ] [ text "Bad" ]
+        , option [ selected (memoryAppealCoefficient == 1.5), value "1.5" ] [ text "Good" ]
+        ]
+
+
 
 {-
-   viewFesIdolArea : フェスユニットのアイドル・アピール値を設定するエリア
+   viewFesIdolArea : フェスユニット編成、ステータス設定を行うエリア
 -}
 
 
@@ -494,8 +568,8 @@ viewFesIdolArea model =
                 , viewFesIdolStatus model Vocal
                 , viewFesIdolStatus model Dance
                 , viewFesIdolStatus model Visual
-                , viewFesIdolStatus model Vocal
-                , viewFesIdolMemoriesLevel model
+                , viewFesIdolStatus model Mental
+                , viewFesIdolMemoryLevel model
                 ]
             ]
         ]
@@ -505,38 +579,44 @@ viewFesIdolStatus : Model -> FesIdolStatus -> Html Msg
 viewFesIdolStatus model status =
     tr []
         [ td [] [ text (statusHeader status) ]
-        , td [] [ input [ value (getStatus (getFesIdol model Leader) status), onInput (ChangeFesIdol Leader status) ] [] ]
-        , td [] [ input [ value (getStatus (getFesIdol model Vocalist) status), onInput (ChangeFesIdol Vocalist status) ] [] ]
-        , td [] [ input [ value (getStatus (getFesIdol model Center) status), onInput (ChangeFesIdol Center status) ] [] ]
-        , td [] [ input [ value (getStatus (getFesIdol model Dancer) status), onInput (ChangeFesIdol Dancer status) ] [] ]
-        , td [] [ input [ value (getStatus (getFesIdol model Visualist) status), onInput (ChangeFesIdol Visualist status) ] [] ]
+        , td [] [ input [ style "width" "4em", value (getStatus (getFesIdol model Leader) status), onInput (ChangeFesIdol Leader status) ] [] ]
+        , td [] [ input [ style "width" "4em", value (getStatus (getFesIdol model Vocalist) status), onInput (ChangeFesIdol Vocalist status) ] [] ]
+        , td [] [ input [ style "width" "4em", value (getStatus (getFesIdol model Center) status), onInput (ChangeFesIdol Center status) ] [] ]
+        , td [] [ input [ style "width" "4em", value (getStatus (getFesIdol model Dancer) status), onInput (ChangeFesIdol Dancer status) ] [] ]
+        , td [] [ input [ style "width" "4em", value (getStatus (getFesIdol model Visualist) status), onInput (ChangeFesIdol Visualist status) ] [] ]
         ]
 
 
-viewFesIdolMemoriesLevel : Model -> Html Msg
-viewFesIdolMemoriesLevel model =
+viewFesIdolMemoryLevel : Model -> Html Msg
+viewFesIdolMemoryLevel model =
     tr []
-        [ td [] [ text (statusHeader MemoriesLevel) ]
-        , td [] [ viewMemoriesLevelPullDown (getFesIdol model Leader) Leader ]
-        , td [] [ viewMemoriesLevelPullDown (getFesIdol model Vocalist) Vocalist ]
-        , td [] [ viewMemoriesLevelPullDown (getFesIdol model Center) Center ]
-        , td [] [ viewMemoriesLevelPullDown (getFesIdol model Dancer) Dancer ]
-        , td [] [ viewMemoriesLevelPullDown (getFesIdol model Visualist) Visualist ]
+        [ td [] [ text (statusHeader MemoryLevel) ]
+        , td [] [ viewMemoryLevelPullDown (getFesIdol model Leader) Leader ]
+        , td [] [ viewMemoryLevelPullDown (getFesIdol model Vocalist) Vocalist ]
+        , td [] [ viewMemoryLevelPullDown (getFesIdol model Center) Center ]
+        , td [] [ viewMemoryLevelPullDown (getFesIdol model Dancer) Dancer ]
+        , td [] [ viewMemoryLevelPullDown (getFesIdol model Visualist) Visualist ]
         ]
 
 
-viewMemoriesLevelOption : String -> Int -> Html Msg
-viewMemoriesLevelOption selectedLevel memoriesLevel =
+viewMemoryLevelOption : String -> MemoryLevel -> Html Msg
+viewMemoryLevelOption selectedLevel memoryLevel =
     option
-        [ selected (String.fromInt memoriesLevel == selectedLevel), value (String.fromInt memoriesLevel) ]
-        [ text (String.fromInt memoriesLevel) ]
+        [ selected (selectedLevel == (memoryLevel |> convertToInt |> String.fromInt))
+        , value (memoryLevel |> convertToInt |> String.fromInt)
+        ]
+        [ text (memoryLevel |> convertToInt |> String.fromInt) ]
 
 
-viewMemoriesLevelPullDown : FesIdol -> FesUnitPosition -> Html Msg
-viewMemoriesLevelPullDown fesIdol position =
+viewMemoryLevelPullDown : FesIdol -> FesUnitPosition -> Html Msg
+viewMemoryLevelPullDown fesIdol position =
+    let
+        memoryLevels =
+            [ Zero, One, Two, Three, Four, Five ]
+    in
     select
-        [ Events.onChange (ChangeFesIdol position MemoriesLevel) ]
-        (List.map (viewMemoriesLevelOption (getStatus fesIdol MemoriesLevel)) (List.range 0 5))
+        [ Events.onChange (ChangeFesIdol position MemoryLevel) ]
+        (List.map (viewMemoryLevelOption (getStatus fesIdol MemoryLevel)) memoryLevels)
 
 
 viewFesIdol : Model -> Html Msg
@@ -602,8 +682,8 @@ getStatus fesIdol status =
         Mental ->
             String.fromInt fesIdol.mental
 
-        MemoriesLevel ->
-            String.fromInt fesIdol.memoriesLevel
+        MemoryLevel ->
+            fesIdol.memoryLevel |> convertToInt |> String.fromInt
 
 
 typeToStatus : AppealType -> FesIdolStatus
@@ -637,8 +717,8 @@ statusHeader status =
         Mental ->
             "Me"
 
-        MemoriesLevel ->
-            "思い出LV"
+        MemoryLevel ->
+            "思い出Lv"
 
 
 
@@ -849,10 +929,10 @@ type FesIdolStatus
     | Dance
     | Visual
     | Mental
-    | MemoriesLevel
+    | MemoryLevel
 
 
-type MemoriesLevel
+type MemoryLevel
     = Zero
     | One
     | Two
@@ -861,9 +941,9 @@ type MemoriesLevel
     | Five
 
 
-toInt : MemoriesLevel -> Int
-toInt memoriesLevel =
-    case memoriesLevel of
+convertToInt : MemoryLevel -> Int
+convertToInt memoryLevel =
+    case memoryLevel of
         Zero ->
             0
 
@@ -881,6 +961,75 @@ toInt memoriesLevel =
 
         Five ->
             5
+
+
+fromString : String -> MemoryLevel
+fromString str =
+    case str of
+        "0" ->
+            Zero
+
+        "1" ->
+            One
+
+        "2" ->
+            Two
+
+        "3" ->
+            Three
+
+        "4" ->
+            Four
+
+        "5" ->
+            Five
+
+        _ ->
+            Zero
+
+
+convertToMemoryPower : MemoryLevel -> Float
+convertToMemoryPower memoryLevel =
+    case memoryLevel of
+        Zero ->
+            0.0
+
+        One ->
+            0.8
+
+        Two ->
+            1.0
+
+        Three ->
+            1.2
+
+        Four ->
+            1.4
+
+        Five ->
+            2.0
+
+
+convertToUnitBuff : MemoryLevel -> Float
+convertToUnitBuff memoryLevel =
+    case memoryLevel of
+        Zero ->
+            0.0
+
+        One ->
+            0.0
+
+        Two ->
+            0.02
+
+        Three ->
+            0.03
+
+        Four ->
+            0.05
+
+        Five ->
+            0.075
 
 
 whichUnit : Idol -> Unit
