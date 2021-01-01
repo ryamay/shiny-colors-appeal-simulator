@@ -2,7 +2,7 @@ module Main exposing (Idol, MemoriesLevel, Model, getStatus, idols, main, update
 
 import Browser
 import Html exposing (..)
-import Html.Attributes exposing (max, min, selected, step, type_, value)
+import Html.Attributes exposing (max, min, selected, step, style, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Html.Events.Extra as Events
 import Html.Extra as Html
@@ -78,6 +78,26 @@ appealCoefficientToString appealCoefficient =
             "Bad"
 
 
+toAppealCoefficient : String -> AppealCoefficient
+toAppealCoefficient str =
+    case str of
+        "Perfect" ->
+            Perfect
+
+        "Good" ->
+            Good
+
+        "Normal" ->
+            Normal
+
+        "Bad" ->
+            Bad
+
+        --一致しない値が来たらPerfectへ設定
+        _ ->
+            Perfect
+
+
 init : Model
 init =
     { leader = FesIdol Meguru 500 500 500 300 1
@@ -105,25 +125,118 @@ update msg model =
     case msg of
         -- TODO:モデルを更新する処理はまだ。
         ChangeFesIdol position status value ->
-            model
+            updateFesIdol model position status value
 
         ChangeAppealer appealer ->
-            model
+            let
+                oldParam =
+                    model.idolAppealParam
+
+                newParam =
+                    { oldParam | idol = toIdol appealer }
+            in
+            { model | idolAppealParam = newParam }
 
         ChangeAppealCoefficient appealCoefficient ->
-            model
+            let
+                oldParam =
+                    model.idolAppealParam
+
+                newParam =
+                    { oldParam | appealCoefficient = toAppealCoefficient appealCoefficient }
+            in
+            { model | idolAppealParam = newParam }
 
         ChangeAppealPower appealType power ->
-            -- TODO:ここは属性ごとに更新するメソッドにした方がいいのか？でもModel更新だけで良い気もする
-            case appealType of
-                Vo ->
-                    model
+            let
+                oldParam =
+                    model.idolAppealParam
 
-                Da ->
-                    model
+                newParam =
+                    case appealType of
+                        Vo ->
+                            { oldParam | vocal = String.toFloat power |> Maybe.withDefault 0.0 }
 
-                Vi ->
-                    model
+                        Da ->
+                            { oldParam | dance = String.toFloat power |> Maybe.withDefault 0.0 }
+
+                        Vi ->
+                            { oldParam | visual = String.toFloat power |> Maybe.withDefault 0.0 }
+            in
+            { model | idolAppealParam = newParam }
+
+
+updateFesIdol : Model -> FesUnitPosition -> FesIdolStatus -> String -> Model
+updateFesIdol model position status value =
+    let
+        oldIdol =
+            getFesIdol model position
+
+        newIdol =
+            case status of
+                Idol ->
+                    { oldIdol | idol = toIdol value }
+
+                Vocal ->
+                    { oldIdol | vocal = String.toInt value |> Maybe.withDefault 0 }
+
+                Dance ->
+                    { oldIdol | dance = String.toInt value |> Maybe.withDefault 0 }
+
+                Visual ->
+                    { oldIdol | visual = String.toInt value |> Maybe.withDefault 0 }
+
+                Mental ->
+                    { oldIdol | mental = String.toInt value |> Maybe.withDefault 0 }
+
+                MemoriesLevel ->
+                    { oldIdol | memoriesLevel = String.toInt value |> Maybe.withDefault 0 }
+    in
+    case position of
+        Leader ->
+            updateLeader model newIdol
+
+        Vocalist ->
+            updateVocalist model newIdol
+
+        Center ->
+            updateCenter model newIdol
+
+        Dancer ->
+            updateDancer model newIdol
+
+        Visualist ->
+            updateVisualist model newIdol
+
+
+updateLeader : Model -> FesIdol -> Model
+updateLeader model newLeader =
+    { model | leader = newLeader }
+
+
+updateVocalist : Model -> FesIdol -> Model
+updateVocalist model newVocalist =
+    { model | vocalist = newVocalist }
+
+
+updateCenter : Model -> FesIdol -> Model
+updateCenter model newCenter =
+    { model | center = newCenter }
+
+
+updateDancer : Model -> FesIdol -> Model
+updateDancer model newDancer =
+    { model | dancer = newDancer }
+
+
+updateVisualist : Model -> FesIdol -> Model
+updateVisualist model newVisualist =
+    { model | visualist = newVisualist }
+
+
+updateIdolAppealParam : Model -> IdolAppealParam -> Model
+updateIdolAppealParam model newIdolAppealParam =
+    { model | idolAppealParam = newIdolAppealParam }
 
 
 
@@ -224,7 +337,7 @@ fesAppealBase model appealType =
             getStatus appealer (typeToStatus appealType) |> String.toFloat |> Maybe.withDefault 0
 
         notAppealers =
-            List.filter ((==) appealer) unitIdols
+            List.filter ((/=) appealer) unitIdols
 
         statusSumOfNotAppealers =
             List.map2 getStatus notAppealers (List.repeat (List.length notAppealers) (typeToStatus appealType)) |> List.filterMap String.toInt |> List.sum |> Basics.toFloat
@@ -351,7 +464,7 @@ viewAppealPower appealType model =
             , onInput (ChangeAppealPower appealType)
             ]
             []
-        , text (appealPower model appealType |> String.fromFloat)
+        , input [ style "width" "4em", value (appealPower model appealType |> String.fromFloat), onInput (ChangeAppealPower appealType) ] []
         ]
 
 
@@ -634,6 +747,83 @@ toString idol =
 
         Koito ->
             "Koito"
+
+
+toIdol : String -> Idol
+toIdol str =
+    case str of
+        "Mano" ->
+            Mano
+
+        "Hiori" ->
+            Hiori
+
+        "Meguru" ->
+            Meguru
+
+        "Kogane" ->
+            Kogane
+
+        "Kiriko" ->
+            Kiriko
+
+        "Yuika" ->
+            Yuika
+
+        "Sakuya" ->
+            Sakuya
+
+        "Mamimi" ->
+            Mamimi
+
+        "Kaho" ->
+            Kaho
+
+        "Rinze" ->
+            Rinze
+
+        "Chiyoko" ->
+            Chiyoko
+
+        "Natsuha" ->
+            Natsuha
+
+        "Juri" ->
+            Juri
+
+        "Chiyuki" ->
+            Chiyuki
+
+        "Tenka" ->
+            Tenka
+
+        "Amana" ->
+            Amana
+
+        "Asahi" ->
+            Asahi
+
+        "Fuyuko" ->
+            Fuyuko
+
+        "Mei" ->
+            Mei
+
+        "Toru" ->
+            Toru
+
+        "Madoka" ->
+            Madoka
+
+        "Hinana" ->
+            Hinana
+
+        "Koito" ->
+            Koito
+
+        -- マッチしなかったらManoに設定
+        _ ->
+            Mano
 
 
 type Unit
