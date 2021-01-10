@@ -5562,6 +5562,184 @@ var $author$project$Main$update = F2(
 					{buffs: newBuffs});
 		}
 	});
+var $author$project$Main$Center = {$: 'Center'};
+var $author$project$Main$Dancer = {$: 'Dancer'};
+var $author$project$Main$Leader = {$: 'Leader'};
+var $author$project$Main$Model = F7(
+	function (leader, vocalist, center, dancer, visualist, idolAppealParam, buffs) {
+		return {buffs: buffs, center: center, dancer: dancer, idolAppealParam: idolAppealParam, leader: leader, visualist: visualist, vocalist: vocalist};
+	});
+var $author$project$Main$Visualist = {$: 'Visualist'};
+var $author$project$Main$Vocalist = {$: 'Vocalist'};
+var $author$project$Main$StatusBonus = F4(
+	function (vocal, dance, visual, mental) {
+		return {dance: dance, mental: mental, visual: visual, vocal: vocal};
+	});
+var $elm$core$List$any = F2(
+	function (isOkay, list) {
+		any:
+		while (true) {
+			if (!list.b) {
+				return false;
+			} else {
+				var x = list.a;
+				var xs = list.b;
+				if (isOkay(x)) {
+					return true;
+				} else {
+					var $temp$isOkay = isOkay,
+						$temp$list = xs;
+					isOkay = $temp$isOkay;
+					list = $temp$list;
+					continue any;
+				}
+			}
+		}
+	});
+var $author$project$Main$calcGradPositionBonus = F2(
+	function (unitPosition, fesIdol) {
+		return A4($author$project$Main$StatusBonus, 0, 0, 0, 0);
+	});
+var $author$project$Main$sum = F2(
+	function (statusBonus1, statusBonus2) {
+		return A4($author$project$Main$StatusBonus, statusBonus1.vocal + statusBonus2.vocal, statusBonus1.dance + statusBonus2.dance, statusBonus1.visual + statusBonus2.visual, statusBonus1.mental + statusBonus2.mental);
+	});
+var $author$project$Main$calcTotalPositionBonus = F2(
+	function (unitPosition, fesIdol) {
+		var gradBonus = A2($author$project$Main$calcGradPositionBonus, unitPosition, fesIdol);
+		var basePositionBonus = function () {
+			switch (unitPosition.$) {
+				case 'Leader':
+					return A4($author$project$Main$StatusBonus, 0, 0, 0, 100);
+				case 'Vocalist':
+					return A4($author$project$Main$StatusBonus, 100, 0, 0, 0);
+				case 'Center':
+					return A4($author$project$Main$StatusBonus, 50, 50, 50, 0);
+				case 'Dancer':
+					return A4($author$project$Main$StatusBonus, 0, 100, 0, 0);
+				default:
+					return A4($author$project$Main$StatusBonus, 0, 0, 100, 0);
+			}
+		}();
+		return A2($author$project$Main$sum, basePositionBonus, gradBonus);
+	});
+var $elm$core$List$filter = F2(
+	function (isGood, list) {
+		return A3(
+			$elm$core$List$foldr,
+			F2(
+				function (x, xs) {
+					return isGood(x) ? A2($elm$core$List$cons, x, xs) : xs;
+				}),
+			_List_Nil,
+			list);
+	});
+var $elm$core$Basics$neq = _Utils_notEqual;
+var $author$project$Main$Alstroemeria = {$: 'Alstroemeria'};
+var $author$project$Main$HokagoClimaxGirls = {$: 'HokagoClimaxGirls'};
+var $author$project$Main$IlluminationStars = {$: 'IlluminationStars'};
+var $author$project$Main$LAntica = {$: 'LAntica'};
+var $author$project$Main$Noctchill = {$: 'Noctchill'};
+var $author$project$Main$Straylight = {$: 'Straylight'};
+var $author$project$Main$whichUnit = function (idol) {
+	switch (idol.$) {
+		case 'Mano':
+			return $author$project$Main$IlluminationStars;
+		case 'Hiori':
+			return $author$project$Main$IlluminationStars;
+		case 'Meguru':
+			return $author$project$Main$IlluminationStars;
+		case 'Kogane':
+			return $author$project$Main$LAntica;
+		case 'Kiriko':
+			return $author$project$Main$LAntica;
+		case 'Yuika':
+			return $author$project$Main$LAntica;
+		case 'Sakuya':
+			return $author$project$Main$LAntica;
+		case 'Mamimi':
+			return $author$project$Main$LAntica;
+		case 'Kaho':
+			return $author$project$Main$HokagoClimaxGirls;
+		case 'Rinze':
+			return $author$project$Main$HokagoClimaxGirls;
+		case 'Chiyoko':
+			return $author$project$Main$HokagoClimaxGirls;
+		case 'Natsuha':
+			return $author$project$Main$HokagoClimaxGirls;
+		case 'Juri':
+			return $author$project$Main$HokagoClimaxGirls;
+		case 'Chiyuki':
+			return $author$project$Main$Alstroemeria;
+		case 'Tenka':
+			return $author$project$Main$Alstroemeria;
+		case 'Amana':
+			return $author$project$Main$Alstroemeria;
+		case 'Asahi':
+			return $author$project$Main$Straylight;
+		case 'Fuyuko':
+			return $author$project$Main$Straylight;
+		case 'Mei':
+			return $author$project$Main$Straylight;
+		case 'Toru':
+			return $author$project$Main$Noctchill;
+		case 'Madoka':
+			return $author$project$Main$Noctchill;
+		case 'Hinana':
+			return $author$project$Main$Noctchill;
+		default:
+			return $author$project$Main$Noctchill;
+	}
+};
+var $author$project$Main$applyBonusToFesIdol = F2(
+	function (rawModel, unitPosition) {
+		var unitIdols = _List_fromArray(
+			[rawModel.leader.idol, rawModel.dancer.idol, rawModel.center.idol, rawModel.vocalist.idol, rawModel.visualist.idol]);
+		var targetIdol = function () {
+			switch (unitPosition.$) {
+				case 'Leader':
+					return rawModel.leader;
+				case 'Vocalist':
+					return rawModel.vocalist;
+				case 'Center':
+					return rawModel.center;
+				case 'Dancer':
+					return rawModel.dancer;
+				default:
+					return rawModel.visualist;
+			}
+		}();
+		var totalPositionBonus = A2($author$project$Main$calcTotalPositionBonus, unitPosition, targetIdol);
+		var existsSameUnit = A2(
+			$elm$core$List$any,
+			$elm$core$Basics$eq(
+				$author$project$Main$whichUnit(targetIdol.idol)),
+			A2(
+				$elm$core$List$map,
+				$author$project$Main$whichUnit,
+				A2(
+					$elm$core$List$filter,
+					$elm$core$Basics$neq(targetIdol.idol),
+					unitIdols)));
+		var unitBonus = existsSameUnit ? A4($author$project$Main$StatusBonus, 20, 20, 20, 20) : A4($author$project$Main$StatusBonus, 0, 0, 0, 0);
+		var totalBonus = A2($author$project$Main$sum, unitBonus, totalPositionBonus);
+		return A6(
+			$author$project$Main$FesIdol,
+			targetIdol.idol,
+			$elm$core$Basics$ceiling(targetIdol.vocal * (1.0 + (totalBonus.vocal * 0.01))),
+			$elm$core$Basics$ceiling(targetIdol.dance * (1.0 + (totalBonus.dance * 0.01))),
+			$elm$core$Basics$ceiling(targetIdol.visual * (1.0 + (totalBonus.visual * 0.01))),
+			$elm$core$Basics$ceiling(targetIdol.mental * (1.0 + (totalBonus.mental * 0.01))),
+			targetIdol.memoryLevel);
+	});
+var $author$project$Main$applyBonus = function (rawModel) {
+	var bonusedVocalist = A2($author$project$Main$applyBonusToFesIdol, rawModel, $author$project$Main$Vocalist);
+	var bonusedVisualist = A2($author$project$Main$applyBonusToFesIdol, rawModel, $author$project$Main$Visualist);
+	var bonusedLeader = A2($author$project$Main$applyBonusToFesIdol, rawModel, $author$project$Main$Leader);
+	var bonusedDancer = A2($author$project$Main$applyBonusToFesIdol, rawModel, $author$project$Main$Dancer);
+	var bonusedCenter = A2($author$project$Main$applyBonusToFesIdol, rawModel, $author$project$Main$Center);
+	return A7($author$project$Main$Model, bonusedLeader, bonusedVocalist, bonusedCenter, bonusedDancer, bonusedVocalist, rawModel.idolAppealParam, rawModel.buffs);
+};
 var $elm$html$Html$div = _VirtualDom_node('div');
 var $elm$html$Html$h1 = _VirtualDom_node('h1');
 var $elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
@@ -5569,6 +5747,7 @@ var $elm$html$Html$text = $elm$virtual_dom$VirtualDom$text;
 var $author$project$Main$Da = {$: 'Da'};
 var $author$project$Main$Vi = {$: 'Vi'};
 var $author$project$Main$Vo = {$: 'Vo'};
+var $elm$html$Html$h2 = _VirtualDom_node('h2');
 var $elm$html$Html$table = _VirtualDom_node('table');
 var $elm$html$Html$tbody = _VirtualDom_node('tbody');
 var $elm$html$Html$td = _VirtualDom_node('td');
@@ -5902,116 +6081,383 @@ var $author$project$Main$viewMemoryAppeal = function (model) {
 };
 var $author$project$Main$viewAppealArea = function (model) {
 	return A2(
-		$elm$html$Html$table,
+		$elm$html$Html$div,
 		_List_Nil,
 		_List_fromArray(
 			[
 				A2(
-				$elm$html$Html$thead,
+				$elm$html$Html$h2,
 				_List_Nil,
 				_List_fromArray(
 					[
-						A2(
-						$elm$html$Html$tr,
-						_List_Nil,
-						_List_fromArray(
-							[
-								A2(
-								$elm$html$Html$th,
-								_List_Nil,
-								_List_fromArray(
-									[
-										$elm$html$Html$text('アピールするアイドル')
-									])),
-								A2(
-								$elm$html$Html$th,
-								_List_Nil,
-								_List_fromArray(
-									[
-										$elm$html$Html$text('アピール係数')
-									])),
-								A2(
-								$elm$html$Html$th,
-								_List_Nil,
-								_List_fromArray(
-									[
-										$elm$html$Html$text('Vo倍率')
-									])),
-								A2(
-								$elm$html$Html$th,
-								_List_Nil,
-								_List_fromArray(
-									[
-										$elm$html$Html$text('Da倍率')
-									])),
-								A2(
-								$elm$html$Html$th,
-								_List_Nil,
-								_List_fromArray(
-									[
-										$elm$html$Html$text('Vi倍率')
-									])),
-								A2(
-								$elm$html$Html$th,
-								_List_Nil,
-								_List_fromArray(
-									[
-										$elm$html$Html$text('思い出アピール')
-									]))
-							]))
+						$elm$html$Html$text('アピール倍率指定エリア')
 					])),
 				A2(
-				$elm$html$Html$tbody,
+				$elm$html$Html$table,
 				_List_Nil,
 				_List_fromArray(
 					[
 						A2(
-						$elm$html$Html$tr,
+						$elm$html$Html$thead,
 						_List_Nil,
 						_List_fromArray(
 							[
 								A2(
-								$elm$html$Html$td,
+								$elm$html$Html$tr,
 								_List_Nil,
 								_List_fromArray(
 									[
-										$author$project$Main$viewAppealIdolPulldown(model)
-									])),
-								A2(
-								$elm$html$Html$td,
-								_List_Nil,
-								_List_fromArray(
-									[
-										$author$project$Main$viewAppealCoefficient(model)
-									])),
-								A2(
-								$elm$html$Html$td,
-								_List_Nil,
-								_List_fromArray(
-									[
-										A2($author$project$Main$viewAppealPower, $author$project$Main$Vo, model)
-									])),
-								A2(
-								$elm$html$Html$td,
-								_List_Nil,
-								_List_fromArray(
-									[
-										A2($author$project$Main$viewAppealPower, $author$project$Main$Da, model)
-									])),
-								A2(
-								$elm$html$Html$td,
-								_List_Nil,
-								_List_fromArray(
-									[
-										A2($author$project$Main$viewAppealPower, $author$project$Main$Vi, model)
-									])),
-								A2(
-								$elm$html$Html$td,
-								_List_Nil,
-								_List_fromArray(
-									[
-										$author$project$Main$viewMemoryAppeal(model)
+										A2(
+										$elm$html$Html$th,
+										_List_Nil,
+										_List_fromArray(
+											[
+												$elm$html$Html$text('アピールするアイドル')
+											])),
+										A2(
+										$elm$html$Html$th,
+										_List_Nil,
+										_List_fromArray(
+											[
+												$elm$html$Html$text('アピール係数')
+											])),
+										A2(
+										$elm$html$Html$th,
+										_List_Nil,
+										_List_fromArray(
+											[
+												$elm$html$Html$text('Vo倍率')
+											])),
+										A2(
+										$elm$html$Html$th,
+										_List_Nil,
+										_List_fromArray(
+											[
+												$elm$html$Html$text('Da倍率')
+											])),
+										A2(
+										$elm$html$Html$th,
+										_List_Nil,
+										_List_fromArray(
+											[
+												$elm$html$Html$text('Vi倍率')
+											])),
+										A2(
+										$elm$html$Html$th,
+										_List_Nil,
+										_List_fromArray(
+											[
+												$elm$html$Html$text('思い出アピール')
+											]))
 									]))
+							])),
+						A2(
+						$elm$html$Html$tbody,
+						_List_Nil,
+						_List_fromArray(
+							[
+								A2(
+								$elm$html$Html$tr,
+								_List_Nil,
+								_List_fromArray(
+									[
+										A2(
+										$elm$html$Html$td,
+										_List_Nil,
+										_List_fromArray(
+											[
+												$author$project$Main$viewAppealIdolPulldown(model)
+											])),
+										A2(
+										$elm$html$Html$td,
+										_List_Nil,
+										_List_fromArray(
+											[
+												$author$project$Main$viewAppealCoefficient(model)
+											])),
+										A2(
+										$elm$html$Html$td,
+										_List_Nil,
+										_List_fromArray(
+											[
+												A2($author$project$Main$viewAppealPower, $author$project$Main$Vo, model)
+											])),
+										A2(
+										$elm$html$Html$td,
+										_List_Nil,
+										_List_fromArray(
+											[
+												A2($author$project$Main$viewAppealPower, $author$project$Main$Da, model)
+											])),
+										A2(
+										$elm$html$Html$td,
+										_List_Nil,
+										_List_fromArray(
+											[
+												A2($author$project$Main$viewAppealPower, $author$project$Main$Vi, model)
+											])),
+										A2(
+										$elm$html$Html$td,
+										_List_Nil,
+										_List_fromArray(
+											[
+												$author$project$Main$viewMemoryAppeal(model)
+											]))
+									]))
+							]))
+					]))
+			]));
+};
+var $author$project$Main$Dance = {$: 'Dance'};
+var $author$project$Main$Mental = {$: 'Mental'};
+var $author$project$Main$Visual = {$: 'Visual'};
+var $author$project$Main$Vocal = {$: 'Vocal'};
+var $author$project$Main$Idol = {$: 'Idol'};
+var $author$project$Main$statusHeader = function (status) {
+	switch (status.$) {
+		case 'Idol':
+			return 'アイドル';
+		case 'Vocal':
+			return 'Vo';
+		case 'Dance':
+			return 'Da';
+		case 'Visual':
+			return 'Vi';
+		case 'Mental':
+			return 'Me';
+		default:
+			return '思い出Lv';
+	}
+};
+var $author$project$Main$writeFesIdol = function (model) {
+	return A2(
+		$elm$html$Html$tr,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				$elm$html$Html$td,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text(
+						$author$project$Main$statusHeader($author$project$Main$Idol))
+					])),
+				A2(
+				$elm$html$Html$td,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text(
+						$author$project$Main$toString(model.leader.idol))
+					])),
+				A2(
+				$elm$html$Html$td,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text(
+						$author$project$Main$toString(model.vocalist.idol))
+					])),
+				A2(
+				$elm$html$Html$td,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text(
+						$author$project$Main$toString(model.center.idol))
+					])),
+				A2(
+				$elm$html$Html$td,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text(
+						$author$project$Main$toString(model.dancer.idol))
+					])),
+				A2(
+				$elm$html$Html$td,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text(
+						$author$project$Main$toString(model.visualist.idol))
+					]))
+			]));
+};
+var $author$project$Main$convertToInt = function (memoryLevel) {
+	switch (memoryLevel.$) {
+		case 'Zero':
+			return 0;
+		case 'One':
+			return 1;
+		case 'Two':
+			return 2;
+		case 'Three':
+			return 3;
+		case 'Four':
+			return 4;
+		default:
+			return 5;
+	}
+};
+var $author$project$Main$getStatus = F2(
+	function (fesIdol, status) {
+		switch (status.$) {
+			case 'Idol':
+				return $author$project$Main$toString(fesIdol.idol);
+			case 'Vocal':
+				return $elm$core$String$fromInt(fesIdol.vocal);
+			case 'Dance':
+				return $elm$core$String$fromInt(fesIdol.dance);
+			case 'Visual':
+				return $elm$core$String$fromInt(fesIdol.visual);
+			case 'Mental':
+				return $elm$core$String$fromInt(fesIdol.mental);
+			default:
+				return $elm$core$String$fromInt(
+					$author$project$Main$convertToInt(fesIdol.memoryLevel));
+		}
+	});
+var $author$project$Main$writeFesIdolStatus = F2(
+	function (model, status) {
+		return A2(
+			$elm$html$Html$tr,
+			_List_Nil,
+			_List_fromArray(
+				[
+					A2(
+					$elm$html$Html$td,
+					_List_Nil,
+					_List_fromArray(
+						[
+							$elm$html$Html$text(
+							$author$project$Main$statusHeader(status))
+						])),
+					A2(
+					$elm$html$Html$td,
+					_List_Nil,
+					_List_fromArray(
+						[
+							$elm$html$Html$text(
+							A2($author$project$Main$getStatus, model.leader, status))
+						])),
+					A2(
+					$elm$html$Html$td,
+					_List_Nil,
+					_List_fromArray(
+						[
+							$elm$html$Html$text(
+							A2($author$project$Main$getStatus, model.vocalist, status))
+						])),
+					A2(
+					$elm$html$Html$td,
+					_List_Nil,
+					_List_fromArray(
+						[
+							$elm$html$Html$text(
+							A2($author$project$Main$getStatus, model.center, status))
+						])),
+					A2(
+					$elm$html$Html$td,
+					_List_Nil,
+					_List_fromArray(
+						[
+							$elm$html$Html$text(
+							A2($author$project$Main$getStatus, model.dancer, status))
+						])),
+					A2(
+					$elm$html$Html$td,
+					_List_Nil,
+					_List_fromArray(
+						[
+							$elm$html$Html$text(
+							A2($author$project$Main$getStatus, model.visualist, status))
+						]))
+				]));
+	});
+var $author$project$Main$viewBonusedFesUnitArea = function (model) {
+	return A2(
+		$elm$html$Html$div,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				$elm$html$Html$h2,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text('ボーナス適用後のステータス')
+					])),
+				A2(
+				$elm$html$Html$table,
+				_List_Nil,
+				_List_fromArray(
+					[
+						A2(
+						$elm$html$Html$thead,
+						_List_Nil,
+						_List_fromArray(
+							[
+								A2(
+								$elm$html$Html$tr,
+								_List_Nil,
+								_List_fromArray(
+									[
+										A2(
+										$elm$html$Html$th,
+										_List_Nil,
+										_List_fromArray(
+											[
+												$elm$html$Html$text('ポジション')
+											])),
+										A2(
+										$elm$html$Html$th,
+										_List_Nil,
+										_List_fromArray(
+											[
+												$elm$html$Html$text('Leader')
+											])),
+										A2(
+										$elm$html$Html$th,
+										_List_Nil,
+										_List_fromArray(
+											[
+												$elm$html$Html$text('Vocal担当')
+											])),
+										A2(
+										$elm$html$Html$th,
+										_List_Nil,
+										_List_fromArray(
+											[
+												$elm$html$Html$text('Center')
+											])),
+										A2(
+										$elm$html$Html$th,
+										_List_Nil,
+										_List_fromArray(
+											[
+												$elm$html$Html$text('Dance担当')
+											])),
+										A2(
+										$elm$html$Html$th,
+										_List_Nil,
+										_List_fromArray(
+											[
+												$elm$html$Html$text('Visual担当')
+											]))
+									]))
+							])),
+						A2(
+						$elm$html$Html$tbody,
+						_List_Nil,
+						_List_fromArray(
+							[
+								$author$project$Main$writeFesIdol(model),
+								A2($author$project$Main$writeFesIdolStatus, model, $author$project$Main$Vocal),
+								A2($author$project$Main$writeFesIdolStatus, model, $author$project$Main$Dance),
+								A2($author$project$Main$writeFesIdolStatus, model, $author$project$Main$Visual),
+								A2($author$project$Main$writeFesIdolStatus, model, $author$project$Main$Mental)
 							]))
 					]))
 			]));
@@ -6069,141 +6515,94 @@ var $author$project$Main$viewBuffSlider = F2(
 	});
 var $author$project$Main$viewBuffArea = function (model) {
 	return A2(
-		$elm$html$Html$table,
+		$elm$html$Html$div,
 		_List_Nil,
 		_List_fromArray(
 			[
 				A2(
-				$elm$html$Html$thead,
+				$elm$html$Html$h2,
 				_List_Nil,
 				_List_fromArray(
 					[
-						A2(
-						$elm$html$Html$tr,
-						_List_Nil,
-						_List_fromArray(
-							[
-								A2(
-								$elm$html$Html$th,
-								_List_Nil,
-								_List_fromArray(
-									[
-										$elm$html$Html$text('Vocalバフ')
-									])),
-								A2(
-								$elm$html$Html$th,
-								_List_Nil,
-								_List_fromArray(
-									[
-										$elm$html$Html$text('Danceバフ')
-									])),
-								A2(
-								$elm$html$Html$th,
-								_List_Nil,
-								_List_fromArray(
-									[
-										$elm$html$Html$text('Visualバフ')
-									]))
-							]))
+						$elm$html$Html$text('バフ指定エリア')
 					])),
 				A2(
-				$elm$html$Html$tbody,
+				$elm$html$Html$table,
 				_List_Nil,
 				_List_fromArray(
 					[
 						A2(
-						$elm$html$Html$tr,
+						$elm$html$Html$thead,
 						_List_Nil,
 						_List_fromArray(
 							[
 								A2(
-								$elm$html$Html$td,
+								$elm$html$Html$tr,
 								_List_Nil,
 								_List_fromArray(
 									[
-										A2($author$project$Main$viewBuffSlider, $author$project$Main$Vo, model)
-									])),
+										A2(
+										$elm$html$Html$th,
+										_List_Nil,
+										_List_fromArray(
+											[
+												$elm$html$Html$text('Vocalバフ')
+											])),
+										A2(
+										$elm$html$Html$th,
+										_List_Nil,
+										_List_fromArray(
+											[
+												$elm$html$Html$text('Danceバフ')
+											])),
+										A2(
+										$elm$html$Html$th,
+										_List_Nil,
+										_List_fromArray(
+											[
+												$elm$html$Html$text('Visualバフ')
+											]))
+									]))
+							])),
+						A2(
+						$elm$html$Html$tbody,
+						_List_Nil,
+						_List_fromArray(
+							[
 								A2(
-								$elm$html$Html$td,
+								$elm$html$Html$tr,
 								_List_Nil,
 								_List_fromArray(
 									[
-										A2($author$project$Main$viewBuffSlider, $author$project$Main$Da, model)
-									])),
-								A2(
-								$elm$html$Html$td,
-								_List_Nil,
-								_List_fromArray(
-									[
-										A2($author$project$Main$viewBuffSlider, $author$project$Main$Vi, model)
+										A2(
+										$elm$html$Html$td,
+										_List_Nil,
+										_List_fromArray(
+											[
+												A2($author$project$Main$viewBuffSlider, $author$project$Main$Vo, model)
+											])),
+										A2(
+										$elm$html$Html$td,
+										_List_Nil,
+										_List_fromArray(
+											[
+												A2($author$project$Main$viewBuffSlider, $author$project$Main$Da, model)
+											])),
+										A2(
+										$elm$html$Html$td,
+										_List_Nil,
+										_List_fromArray(
+											[
+												A2($author$project$Main$viewBuffSlider, $author$project$Main$Vi, model)
+											]))
 									]))
 							]))
 					]))
 			]));
 };
-var $author$project$Main$Dance = {$: 'Dance'};
-var $author$project$Main$Mental = {$: 'Mental'};
-var $author$project$Main$Visual = {$: 'Visual'};
-var $author$project$Main$Vocal = {$: 'Vocal'};
-var $author$project$Main$Center = {$: 'Center'};
-var $author$project$Main$Dancer = {$: 'Dancer'};
-var $author$project$Main$Idol = {$: 'Idol'};
-var $author$project$Main$Leader = {$: 'Leader'};
-var $author$project$Main$Visualist = {$: 'Visualist'};
-var $author$project$Main$Vocalist = {$: 'Vocalist'};
-var $author$project$Main$statusHeader = function (status) {
-	switch (status.$) {
-		case 'Idol':
-			return 'アイドル';
-		case 'Vocal':
-			return 'Vo';
-		case 'Dance':
-			return 'Da';
-		case 'Visual':
-			return 'Vi';
-		case 'Mental':
-			return 'Me';
-		default:
-			return '思い出Lv';
-	}
-};
 var $author$project$Main$ChangeFesIdol = F3(
 	function (a, b, c) {
 		return {$: 'ChangeFesIdol', a: a, b: b, c: c};
-	});
-var $author$project$Main$convertToInt = function (memoryLevel) {
-	switch (memoryLevel.$) {
-		case 'Zero':
-			return 0;
-		case 'One':
-			return 1;
-		case 'Two':
-			return 2;
-		case 'Three':
-			return 3;
-		case 'Four':
-			return 4;
-		default:
-			return 5;
-	}
-};
-var $author$project$Main$getStatus = F2(
-	function (fesIdol, status) {
-		switch (status.$) {
-			case 'Idol':
-				return $author$project$Main$toString(fesIdol.idol);
-			case 'Vocal':
-				return $elm$core$String$fromInt(fesIdol.vocal);
-			case 'Dance':
-				return $elm$core$String$fromInt(fesIdol.dance);
-			case 'Visual':
-				return $elm$core$String$fromInt(fesIdol.visual);
-			case 'Mental':
-				return $elm$core$String$fromInt(fesIdol.mental);
-			default:
-				return $elm$core$String$fromInt(
-					$author$project$Main$convertToInt(fesIdol.memoryLevel));
-		}
 	});
 var $author$project$Main$idols = _List_fromArray(
 	[$author$project$Main$Mano, $author$project$Main$Hiori, $author$project$Main$Meguru, $author$project$Main$Kogane, $author$project$Main$Kiriko, $author$project$Main$Yuika, $author$project$Main$Sakuya, $author$project$Main$Mamimi, $author$project$Main$Kaho, $author$project$Main$Rinze, $author$project$Main$Chiyoko, $author$project$Main$Natsuha, $author$project$Main$Juri, $author$project$Main$Chiyuki, $author$project$Main$Tenka, $author$project$Main$Amana, $author$project$Main$Asahi, $author$project$Main$Fuyuko, $author$project$Main$Mei, $author$project$Main$Toru, $author$project$Main$Madoka, $author$project$Main$Hinana, $author$project$Main$Koito]);
@@ -6511,12 +6910,19 @@ var $author$project$Main$viewFesIdolStatus = F2(
 						]))
 				]));
 	});
-var $author$project$Main$viewFesIdolArea = function (model) {
+var $author$project$Main$viewFesUnitArea = function (model) {
 	return A2(
 		$elm$html$Html$div,
 		_List_Nil,
 		_List_fromArray(
 			[
+				A2(
+				$elm$html$Html$h2,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text('フェスユニットのステータス指定エリア')
+					])),
 				A2(
 				$elm$html$Html$table,
 				_List_Nil,
@@ -6605,17 +7011,6 @@ var $author$project$Main$calcTotalBuff = F2(
 				return model.buffs.visual + $author$project$Main$calcGradBuff(model);
 		}
 	});
-var $elm$core$List$filter = F2(
-	function (isGood, list) {
-		return A3(
-			$elm$core$List$foldr,
-			F2(
-				function (x, xs) {
-					return isGood(x) ? A2($elm$core$List$cons, x, xs) : xs;
-				}),
-			_List_Nil,
-			list);
-	});
 var $elm$core$List$maybeCons = F3(
 	function (f, mx, xs) {
 		var _v0 = f(mx);
@@ -6634,7 +7029,6 @@ var $elm$core$List$filterMap = F2(
 			_List_Nil,
 			xs);
 	});
-var $elm$core$Basics$neq = _Utils_notEqual;
 var $elm$core$List$repeatHelp = F3(
 	function (result, n, value) {
 		repeatHelp:
@@ -6890,69 +7284,83 @@ var $author$project$Main$viewJudge = F2(
 	});
 var $author$project$Main$viewJudgeArea = function (model) {
 	return A2(
-		$elm$html$Html$table,
+		$elm$html$Html$div,
 		_List_Nil,
 		_List_fromArray(
 			[
 				A2(
-				$elm$html$Html$thead,
+				$elm$html$Html$h2,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text('アピール値')
+					])),
+				A2(
+				$elm$html$Html$table,
 				_List_Nil,
 				_List_fromArray(
 					[
 						A2(
-						$elm$html$Html$tr,
+						$elm$html$Html$thead,
 						_List_Nil,
 						_List_fromArray(
 							[
 								A2(
-								$elm$html$Html$th,
+								$elm$html$Html$tr,
 								_List_Nil,
 								_List_fromArray(
 									[
-										$elm$html$Html$text('審査員タイプ')
-									])),
-								A2(
-								$elm$html$Html$th,
-								_List_Nil,
-								_List_fromArray(
-									[
-										$elm$html$Html$text('Voアピール')
-									])),
-								A2(
-								$elm$html$Html$th,
-								_List_Nil,
-								_List_fromArray(
-									[
-										$elm$html$Html$text('Daアピール')
-									])),
-								A2(
-								$elm$html$Html$th,
-								_List_Nil,
-								_List_fromArray(
-									[
-										$elm$html$Html$text('Viアピール')
-									])),
-								A2(
-								$elm$html$Html$th,
-								_List_Nil,
-								_List_fromArray(
-									[
-										$elm$html$Html$text('思い出アピール')
+										A2(
+										$elm$html$Html$th,
+										_List_Nil,
+										_List_fromArray(
+											[
+												$elm$html$Html$text('審査員タイプ')
+											])),
+										A2(
+										$elm$html$Html$th,
+										_List_Nil,
+										_List_fromArray(
+											[
+												$elm$html$Html$text('Voアピール')
+											])),
+										A2(
+										$elm$html$Html$th,
+										_List_Nil,
+										_List_fromArray(
+											[
+												$elm$html$Html$text('Daアピール')
+											])),
+										A2(
+										$elm$html$Html$th,
+										_List_Nil,
+										_List_fromArray(
+											[
+												$elm$html$Html$text('Viアピール')
+											])),
+										A2(
+										$elm$html$Html$th,
+										_List_Nil,
+										_List_fromArray(
+											[
+												$elm$html$Html$text('思い出アピール')
+											]))
 									]))
+							])),
+						A2(
+						$elm$html$Html$tbody,
+						_List_Nil,
+						_List_fromArray(
+							[
+								A2($author$project$Main$viewJudge, $author$project$Main$Vo, model),
+								A2($author$project$Main$viewJudge, $author$project$Main$Da, model),
+								A2($author$project$Main$viewJudge, $author$project$Main$Vi, model)
 							]))
-					])),
-				A2(
-				$elm$html$Html$tbody,
-				_List_Nil,
-				_List_fromArray(
-					[
-						A2($author$project$Main$viewJudge, $author$project$Main$Vo, model),
-						A2($author$project$Main$viewJudge, $author$project$Main$Da, model),
-						A2($author$project$Main$viewJudge, $author$project$Main$Vi, model)
 					]))
 			]));
 };
 var $author$project$Main$view = function (model) {
+	var bonusAppliedModel = $author$project$Main$applyBonus(model);
 	return A2(
 		$elm$html$Html$div,
 		_List_Nil,
@@ -6976,10 +7384,11 @@ var $author$project$Main$view = function (model) {
 				_List_Nil,
 				_List_fromArray(
 					[
-						$author$project$Main$viewJudgeArea(model),
+						$author$project$Main$viewJudgeArea(bonusAppliedModel),
 						$author$project$Main$viewBuffArea(model),
 						$author$project$Main$viewAppealArea(model),
-						$author$project$Main$viewFesIdolArea(model)
+						$author$project$Main$viewBonusedFesUnitArea(bonusAppliedModel),
+						$author$project$Main$viewFesUnitArea(model)
 					]))
 			]));
 };
