@@ -28,6 +28,7 @@ type alias Model =
     , dancer : FesIdol
     , visualist : FesIdol
     , idolAppealParam : IdolAppealParam
+    , buffs : Buffs
     }
 
 
@@ -56,6 +57,13 @@ type AppealCoefficient
     | Good
     | Normal
     | Bad
+
+
+type alias Buffs =
+    { vocal : Int
+    , dance : Int
+    , visual : Int
+    }
 
 
 appealCoefficients : List AppealCoefficient
@@ -107,6 +115,7 @@ init =
     , dancer = FesIdol Kogane 500 500 500 300 One
     , visualist = FesIdol Kaho 500 500 500 300 One
     , idolAppealParam = IdolAppealParam Mano Perfect 1.0 1.0 1.0 0.0
+    , buffs = Buffs 0 0 0
     }
 
 
@@ -120,6 +129,7 @@ type Msg
     | ChangeAppealCoefficient String
     | ChangeAppealPower AppealType String
     | ChangeMemoryAppealCoefficient String
+    | ChangeBuff AppealType String
 
 
 update : Msg -> Model -> Model
@@ -175,6 +185,24 @@ update msg model =
                     { oldParam | memoryCoefficient = String.toFloat memoryCoefficient |> Maybe.withDefault 0.0 }
             in
             { model | idolAppealParam = newParam }
+
+        ChangeBuff appealType newBuff ->
+            let
+                oldBuffs =
+                    model.buffs
+
+                newBuffs =
+                    case appealType of
+                        Vo ->
+                            { oldBuffs | vocal = String.toInt newBuff |> Maybe.withDefault 0 }
+
+                        Da ->
+                            { oldBuffs | dance = String.toInt newBuff |> Maybe.withDefault 0 }
+
+                        Vi ->
+                            { oldBuffs | visual = String.toInt newBuff |> Maybe.withDefault 0 }
+            in
+            { model | buffs = newBuffs }
 
 
 updateFesIdol : Model -> FesUnitPosition -> FesIdolStatus -> String -> Model
@@ -257,9 +285,15 @@ updateIdolAppealParam model newIdolAppealParam =
 view : Model -> Html Msg
 view model =
     div []
-        [ viewJudgeArea model
-        , viewAppealArea model
-        , viewFesIdolArea model
+        [ div []
+            [ h1 [] [ text "フェスアピール値シミュレータ" ]
+            ]
+        , div []
+            [ viewJudgeArea model
+            , viewBuffArea model
+            , viewAppealArea model
+            , viewFesIdolArea model
+            ]
         ]
 
 
@@ -345,6 +379,7 @@ memoryAppealBase model judgeType memoryCo =
                     |> List.sum
                   )
     in
+    -- 各属性のjudgeへの思い出アピール値を計算する
     List.map2 (basicCoefficent model) appealTypes (List.repeat 3 memoryCo)
         |> List.map2 (*) (List.repeat 3 (convertToMemoryPower model.center.memoryLevel))
         |> List.map Basics.floor
@@ -368,14 +403,22 @@ appealPower model appealType =
             model.idolAppealParam.visual
 
 
+
+-- アピール基礎係数を計算する
+
+
 basicCoefficent : Model -> AppealType -> Float -> Float
 basicCoefficent model appealType appealCoefficient =
     floor
         (fesAppealBase model appealType
-            * (1 + Basics.toFloat (allBuffs model) / 100)
+            * (1 + Basics.toFloat (calcTotalBuff model appealType) / 100)
             * appealCoefficient
         )
         |> Basics.toFloat
+
+
+
+-- フェスアピール基礎値を計算する
 
 
 fesAppealBase : Model -> AppealType -> Float
@@ -444,10 +487,78 @@ typeHeader appealType =
             "Vi"
 
 
-allBuffs : Model -> Basics.Int
-allBuffs model =
-    -- TODO: バフの集計関数を作成する。いったんゼロ固定とする。
+calcTotalBuff : Model -> AppealType -> Basics.Int
+calcTotalBuff model buffType =
+    case buffType of
+        Vo ->
+            model.buffs.vocal + calcGradBuff model
+
+        Da ->
+            model.buffs.dance + calcGradBuff model
+
+        Vi ->
+            model.buffs.visual + calcGradBuff model
+
+
+calcGradBuff : Model -> Int
+calcGradBuff model =
+    --TODO: G.R.A.D.アビリティのバフ集計処理を作成する。
     0
+
+
+
+{-
+   viewBuffArea : Buffの値を設定するエリア
+-}
+
+
+viewBuffArea : Model -> Html Msg
+viewBuffArea model =
+    table []
+        [ thead []
+            [ tr []
+                [ th [] [ text "Vocalバフ" ]
+                , th [] [ text "Danceバフ" ]
+                , th [] [ text "Visualバフ" ]
+                ]
+            ]
+        , tbody []
+            [ tr []
+                [ td [] [ viewBuffSlider Vo model ]
+                , td [] [ viewBuffSlider Da model ]
+                , td [] [ viewBuffSlider Vi model ]
+                ]
+            ]
+        ]
+
+
+viewBuffSlider : AppealType -> Model -> Html Msg
+viewBuffSlider appealType model =
+    div []
+        [ input
+            [ type_ "range"
+            , Html.Attributes.min "-100"
+            , Html.Attributes.max "999"
+            , step "1"
+            , value (getBuff model.buffs appealType |> String.fromInt)
+            , onInput (ChangeBuff appealType)
+            ]
+            []
+        , input [ style "width" "4em", value (getBuff model.buffs appealType |> String.fromInt), onInput (ChangeBuff appealType) ] []
+        ]
+
+
+getBuff : Buffs -> AppealType -> Int
+getBuff buffs appealType =
+    case appealType of
+        Vo ->
+            buffs.vocal
+
+        Da ->
+            buffs.dance
+
+        Vi ->
+            buffs.visual
 
 
 
@@ -537,7 +648,7 @@ viewMemoryAppealPullDown memoryAppealCoefficient =
     select
         [ Events.onChange ChangeMemoryAppealCoefficient ]
         [ option [ selected (memoryAppealCoefficient == 0), value "0" ] [ text "なし" ]
-        , option [ selected (memoryAppealCoefficient == 0.5), value "1.0" ] [ text "Bad" ]
+        , option [ selected (memoryAppealCoefficient == 0.5), value "1.0" ] [ text "Bad" ] --FIXME: Badの場合、係数は1.0ではなく0.5
         , option [ selected (memoryAppealCoefficient == 1.5), value "1.5" ] [ text "Good" ]
         ]
 
