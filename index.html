@@ -4369,6 +4369,10 @@ function _Browser_load(url)
 		}
 	}));
 }
+var $author$project$Main$Buffs = F3(
+	function (vocal, dance, visual) {
+		return {dance: dance, visual: visual, vocal: vocal};
+	});
 var $author$project$Main$FesIdol = F6(
 	function (idol, vocal, dance, visual, mental, memoryLevel) {
 		return {dance: dance, idol: idol, memoryLevel: memoryLevel, mental: mental, visual: visual, vocal: vocal};
@@ -4385,6 +4389,7 @@ var $author$project$Main$Meguru = {$: 'Meguru'};
 var $author$project$Main$One = {$: 'One'};
 var $author$project$Main$Perfect = {$: 'Perfect'};
 var $author$project$Main$init = {
+	buffs: A3($author$project$Main$Buffs, 0, 0, 0),
 	center: A6($author$project$Main$FesIdol, $author$project$Main$Mano, 500, 500, 500, 300, $author$project$Main$One),
 	dancer: A6($author$project$Main$FesIdol, $author$project$Main$Kogane, 500, 500, 500, 300, $author$project$Main$One),
 	idolAppealParam: A6($author$project$Main$IdolAppealParam, $author$project$Main$Mano, $author$project$Main$Perfect, 1.0, 1.0, 1.0, 0.0),
@@ -5503,7 +5508,7 @@ var $author$project$Main$update = F2(
 				return _Utils_update(
 					model,
 					{idolAppealParam: newParam});
-			default:
+			case 'ChangeMemoryAppealCoefficient':
 				var memoryCoefficient = msg.a;
 				var oldParam = model.idolAppealParam;
 				var newParam = _Utils_update(
@@ -5517,17 +5522,56 @@ var $author$project$Main$update = F2(
 				return _Utils_update(
 					model,
 					{idolAppealParam: newParam});
+			default:
+				var appealType = msg.a;
+				var newBuff = msg.b;
+				var oldBuffs = model.buffs;
+				var newBuffs = function () {
+					switch (appealType.$) {
+						case 'Vo':
+							return _Utils_update(
+								oldBuffs,
+								{
+									vocal: A2(
+										$elm$core$Maybe$withDefault,
+										0,
+										$elm$core$String$toInt(newBuff))
+								});
+						case 'Da':
+							return _Utils_update(
+								oldBuffs,
+								{
+									dance: A2(
+										$elm$core$Maybe$withDefault,
+										0,
+										$elm$core$String$toInt(newBuff))
+								});
+						default:
+							return _Utils_update(
+								oldBuffs,
+								{
+									visual: A2(
+										$elm$core$Maybe$withDefault,
+										0,
+										$elm$core$String$toInt(newBuff))
+								});
+					}
+				}();
+				return _Utils_update(
+					model,
+					{buffs: newBuffs});
 		}
 	});
 var $elm$html$Html$div = _VirtualDom_node('div');
+var $elm$html$Html$h1 = _VirtualDom_node('h1');
+var $elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
+var $elm$html$Html$text = $elm$virtual_dom$VirtualDom$text;
 var $author$project$Main$Da = {$: 'Da'};
 var $author$project$Main$Vi = {$: 'Vi'};
 var $author$project$Main$Vo = {$: 'Vo'};
 var $elm$html$Html$table = _VirtualDom_node('table');
 var $elm$html$Html$tbody = _VirtualDom_node('tbody');
 var $elm$html$Html$td = _VirtualDom_node('td');
-var $elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
-var $elm$html$Html$text = $elm$virtual_dom$VirtualDom$text;
 var $elm$html$Html$th = _VirtualDom_node('th');
 var $elm$html$Html$thead = _VirtualDom_node('thead');
 var $elm$html$Html$tr = _VirtualDom_node('tr');
@@ -5828,7 +5872,7 @@ var $author$project$Main$viewMemoryAppealPullDown = function (memoryAppealCoeffi
 				_List_fromArray(
 					[
 						$elm$html$Html$Attributes$selected(memoryAppealCoefficient === 0.5),
-						$elm$html$Html$Attributes$value('1.0')
+						$elm$html$Html$Attributes$value('0.5')
 					]),
 				_List_fromArray(
 					[
@@ -5967,6 +6011,131 @@ var $author$project$Main$viewAppealArea = function (model) {
 								_List_fromArray(
 									[
 										$author$project$Main$viewMemoryAppeal(model)
+									]))
+							]))
+					]))
+			]));
+};
+var $author$project$Main$ChangeBuff = F2(
+	function (a, b) {
+		return {$: 'ChangeBuff', a: a, b: b};
+	});
+var $author$project$Main$getBuff = F2(
+	function (buffs, appealType) {
+		switch (appealType.$) {
+			case 'Vo':
+				return buffs.vocal;
+			case 'Da':
+				return buffs.dance;
+			default:
+				return buffs.visual;
+		}
+	});
+var $author$project$Main$viewBuffSlider = F2(
+	function (appealType, model) {
+		return A2(
+			$elm$html$Html$div,
+			_List_Nil,
+			_List_fromArray(
+				[
+					A2(
+					$elm$html$Html$input,
+					_List_fromArray(
+						[
+							$elm$html$Html$Attributes$type_('range'),
+							$elm$html$Html$Attributes$min('-100'),
+							$elm$html$Html$Attributes$max('999'),
+							$elm$html$Html$Attributes$step('1'),
+							$elm$html$Html$Attributes$value(
+							$elm$core$String$fromInt(
+								A2($author$project$Main$getBuff, model.buffs, appealType))),
+							$elm$html$Html$Events$onInput(
+							$author$project$Main$ChangeBuff(appealType))
+						]),
+					_List_Nil),
+					A2(
+					$elm$html$Html$input,
+					_List_fromArray(
+						[
+							A2($elm$html$Html$Attributes$style, 'width', '4em'),
+							$elm$html$Html$Attributes$value(
+							$elm$core$String$fromInt(
+								A2($author$project$Main$getBuff, model.buffs, appealType))),
+							$elm$html$Html$Events$onInput(
+							$author$project$Main$ChangeBuff(appealType))
+						]),
+					_List_Nil)
+				]));
+	});
+var $author$project$Main$viewBuffArea = function (model) {
+	return A2(
+		$elm$html$Html$table,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				$elm$html$Html$thead,
+				_List_Nil,
+				_List_fromArray(
+					[
+						A2(
+						$elm$html$Html$tr,
+						_List_Nil,
+						_List_fromArray(
+							[
+								A2(
+								$elm$html$Html$th,
+								_List_Nil,
+								_List_fromArray(
+									[
+										$elm$html$Html$text('Vocalバフ')
+									])),
+								A2(
+								$elm$html$Html$th,
+								_List_Nil,
+								_List_fromArray(
+									[
+										$elm$html$Html$text('Danceバフ')
+									])),
+								A2(
+								$elm$html$Html$th,
+								_List_Nil,
+								_List_fromArray(
+									[
+										$elm$html$Html$text('Visualバフ')
+									]))
+							]))
+					])),
+				A2(
+				$elm$html$Html$tbody,
+				_List_Nil,
+				_List_fromArray(
+					[
+						A2(
+						$elm$html$Html$tr,
+						_List_Nil,
+						_List_fromArray(
+							[
+								A2(
+								$elm$html$Html$td,
+								_List_Nil,
+								_List_fromArray(
+									[
+										A2($author$project$Main$viewBuffSlider, $author$project$Main$Vo, model)
+									])),
+								A2(
+								$elm$html$Html$td,
+								_List_Nil,
+								_List_fromArray(
+									[
+										A2($author$project$Main$viewBuffSlider, $author$project$Main$Da, model)
+									])),
+								A2(
+								$elm$html$Html$td,
+								_List_Nil,
+								_List_fromArray(
+									[
+										A2($author$project$Main$viewBuffSlider, $author$project$Main$Vi, model)
 									]))
 							]))
 					]))
@@ -6422,9 +6591,20 @@ var $author$project$Main$viewFesIdolArea = function (model) {
 					]))
 			]));
 };
-var $author$project$Main$allBuffs = function (model) {
+var $author$project$Main$calcGradBuff = function (model) {
 	return 0;
 };
+var $author$project$Main$calcTotalBuff = F2(
+	function (model, buffType) {
+		switch (buffType.$) {
+			case 'Vo':
+				return model.buffs.vocal + $author$project$Main$calcGradBuff(model);
+			case 'Da':
+				return model.buffs.dance + $author$project$Main$calcGradBuff(model);
+			default:
+				return model.buffs.visual + $author$project$Main$calcGradBuff(model);
+		}
+	});
 var $elm$core$List$filter = F2(
 	function (isGood, list) {
 		return A3(
@@ -6538,7 +6718,7 @@ var $author$project$Main$fesAppealBase = F2(
 var $author$project$Main$basicCoefficent = F3(
 	function (model, appealType, appealCoefficient) {
 		return $elm$core$Basics$floor(
-			(A2($author$project$Main$fesAppealBase, model, appealType) * (1 + ($author$project$Main$allBuffs(model) / 100))) * appealCoefficient);
+			(A2($author$project$Main$fesAppealBase, model, appealType) * (1 + (A2($author$project$Main$calcTotalBuff, model, appealType) / 100))) * appealCoefficient);
 	});
 var $author$project$Main$calcJudgeBuff = F2(
 	function (appealType, judgeType) {
@@ -6778,9 +6958,29 @@ var $author$project$Main$view = function (model) {
 		_List_Nil,
 		_List_fromArray(
 			[
-				$author$project$Main$viewJudgeArea(model),
-				$author$project$Main$viewAppealArea(model),
-				$author$project$Main$viewFesIdolArea(model)
+				A2(
+				$elm$html$Html$div,
+				_List_Nil,
+				_List_fromArray(
+					[
+						A2(
+						$elm$html$Html$h1,
+						_List_Nil,
+						_List_fromArray(
+							[
+								$elm$html$Html$text('フェスアピール値シミュレータ')
+							]))
+					])),
+				A2(
+				$elm$html$Html$div,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$author$project$Main$viewJudgeArea(model),
+						$author$project$Main$viewBuffArea(model),
+						$author$project$Main$viewAppealArea(model),
+						$author$project$Main$viewFesIdolArea(model)
+					]))
 			]));
 };
 var $author$project$Main$main = $elm$browser$Browser$sandbox(
