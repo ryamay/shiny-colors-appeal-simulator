@@ -132,6 +132,10 @@ type Msg
     | ChangeBuff AppealType String
 
 
+
+--TODO: アピールするアイドルがフェスユニットから外された時、アピール値が更新されない挙動を修正したい。
+
+
 update : Msg -> Model -> Model
 update msg model =
     case msg of
@@ -284,35 +288,164 @@ updateIdolAppealParam model newIdolAppealParam =
 
 view : Model -> Html Msg
 view model =
+    let
+        bonusAppliedModel =
+            applyBonus model
+    in
     div []
         [ div []
             [ h1 [] [ text "フェスアピール値シミュレータ" ]
             ]
         , div []
-            [ viewJudgeArea model
+            [ viewJudgeArea bonusAppliedModel
             , viewBuffArea model
             , viewAppealArea model
-            , viewFesIdolArea model
+            , viewBonusedFesUnitArea bonusAppliedModel
+            , viewFesUnitArea model
             ]
         ]
 
 
+applyBonus : Model -> Model
+applyBonus rawModel =
+    let
+        bonusedLeader =
+            applyBonusToFesIdol rawModel Leader
+
+        bonusedVocalist =
+            applyBonusToFesIdol rawModel Vocalist
+
+        bonusedCenter =
+            applyBonusToFesIdol rawModel Center
+
+        bonusedDancer =
+            applyBonusToFesIdol rawModel Dancer
+
+        bonusedVisualist =
+            applyBonusToFesIdol rawModel Visualist
+    in
+    Model bonusedLeader bonusedVocalist bonusedCenter bonusedDancer bonusedVocalist rawModel.idolAppealParam rawModel.buffs
+
+
+type alias StatusBonus =
+    -- 各ステータスのボーナス値をパーセント表示で保持。
+    { vocal : Int
+    , dance : Int
+    , visual : Int
+    , mental : Int
+    }
+
+
+applyBonusToFesIdol : Model -> FesUnitPosition -> FesIdol
+applyBonusToFesIdol rawModel unitPosition =
+    let
+        targetIdol =
+            case unitPosition of
+                Leader ->
+                    rawModel.leader
+
+                Vocalist ->
+                    rawModel.vocalist
+
+                Center ->
+                    rawModel.center
+
+                Dancer ->
+                    rawModel.dancer
+
+                Visualist ->
+                    rawModel.visualist
+
+        unitIdols =
+            [ rawModel.leader.idol, rawModel.dancer.idol, rawModel.center.idol, rawModel.vocalist.idol, rawModel.visualist.idol ]
+
+        existsSameUnit =
+            List.filter ((/=) targetIdol.idol) unitIdols
+                |> List.map whichUnit
+                |> List.any ((==) (whichUnit targetIdol.idol))
+
+        unitBonus =
+            if existsSameUnit then
+                StatusBonus 20 20 20 20
+
+            else
+                StatusBonus 0 0 0 0
+
+        totalPositionBonus =
+            calcTotalPositionBonus unitPosition targetIdol
+
+        totalBonus =
+            sum unitBonus totalPositionBonus
+    in
+    FesIdol
+        targetIdol.idol
+        (((targetIdol.vocal |> Basics.toFloat) * (1.0 + (totalBonus.vocal |> Basics.toFloat) * 0.01)) |> Basics.ceiling)
+        (((targetIdol.dance |> Basics.toFloat) * (1.0 + (totalBonus.dance |> Basics.toFloat) * 0.01)) |> Basics.ceiling)
+        (((targetIdol.visual |> Basics.toFloat) * (1.0 + (totalBonus.visual |> Basics.toFloat) * 0.01)) |> Basics.ceiling)
+        (((targetIdol.mental |> Basics.toFloat) * (1.0 + (totalBonus.mental |> Basics.toFloat) * 0.01)) |> Basics.ceiling)
+        targetIdol.memoryLevel
+
+
+calcTotalPositionBonus : FesUnitPosition -> FesIdol -> StatusBonus
+calcTotalPositionBonus unitPosition fesIdol =
+    let
+        basePositionBonus =
+            case unitPosition of
+                Leader ->
+                    StatusBonus 0 0 0 100
+
+                Vocalist ->
+                    StatusBonus 100 0 0 0
+
+                Center ->
+                    StatusBonus 50 50 50 0
+
+                Dancer ->
+                    StatusBonus 0 100 0 0
+
+                Visualist ->
+                    StatusBonus 0 0 100 0
+
+        gradBonus =
+            calcGradPositionBonus unitPosition fesIdol
+    in
+    sum basePositionBonus gradBonus
+
+
+sum : StatusBonus -> StatusBonus -> StatusBonus
+sum statusBonus1 statusBonus2 =
+    StatusBonus
+        (statusBonus1.vocal + statusBonus2.vocal)
+        (statusBonus1.dance + statusBonus2.dance)
+        (statusBonus1.visual + statusBonus2.visual)
+        (statusBonus1.mental + statusBonus2.mental)
+
+
+calcGradPositionBonus : FesUnitPosition -> FesIdol -> StatusBonus
+calcGradPositionBonus unitPosition fesIdol =
+    --TODO: G.R.A.D.アビリティについては未反映
+    StatusBonus 0 0 0 0
+
+
 viewJudgeArea : Model -> Html msg
 viewJudgeArea model =
-    table []
-        [ thead []
-            [ tr []
-                [ th [] [ text "審査員タイプ" ]
-                , th [] [ text "Voアピール" ]
-                , th [] [ text "Daアピール" ]
-                , th [] [ text "Viアピール" ]
-                , th [] [ text "思い出アピール" ]
+    div []
+        [ h2 [] [ text "アピール値" ]
+        , table []
+            [ thead []
+                [ tr []
+                    [ th [] [ text "審査員タイプ" ]
+                    , th [] [ text "Voアピール" ]
+                    , th [] [ text "Daアピール" ]
+                    , th [] [ text "Viアピール" ]
+                    , th [] [ text "思い出アピール" ]
+                    ]
                 ]
-            ]
-        , tbody []
-            [ viewJudge Vo model
-            , viewJudge Da model
-            , viewJudge Vi model
+            , tbody []
+                [ viewJudge Vo model
+                , viewJudge Da model
+                , viewJudge Vi model
+                ]
             ]
         ]
 
@@ -514,19 +647,22 @@ calcGradBuff model =
 
 viewBuffArea : Model -> Html Msg
 viewBuffArea model =
-    table []
-        [ thead []
-            [ tr []
-                [ th [] [ text "Vocalバフ" ]
-                , th [] [ text "Danceバフ" ]
-                , th [] [ text "Visualバフ" ]
+    div []
+        [ h2 [] [ text "バフ指定エリア" ]
+        , table []
+            [ thead []
+                [ tr []
+                    [ th [] [ text "Vocalバフ" ]
+                    , th [] [ text "Danceバフ" ]
+                    , th [] [ text "Visualバフ" ]
+                    ]
                 ]
-            ]
-        , tbody []
-            [ tr []
-                [ td [] [ viewBuffSlider Vo model ]
-                , td [] [ viewBuffSlider Da model ]
-                , td [] [ viewBuffSlider Vi model ]
+            , tbody []
+                [ tr []
+                    [ td [] [ viewBuffSlider Vo model ]
+                    , td [] [ viewBuffSlider Da model ]
+                    , td [] [ viewBuffSlider Vi model ]
+                    ]
                 ]
             ]
         ]
@@ -569,25 +705,28 @@ getBuff buffs appealType =
 
 viewAppealArea : Model -> Html Msg
 viewAppealArea model =
-    table []
-        [ thead []
-            [ tr []
-                [ th [] [ text "アピールするアイドル" ]
-                , th [] [ text "アピール係数" ]
-                , th [] [ text "Vo倍率" ]
-                , th [] [ text "Da倍率" ]
-                , th [] [ text "Vi倍率" ]
-                , th [] [ text "思い出アピール" ]
+    div []
+        [ h2 [] [ text "アピール倍率指定エリア" ]
+        , table []
+            [ thead []
+                [ tr []
+                    [ th [] [ text "アピールするアイドル" ]
+                    , th [] [ text "アピール係数" ]
+                    , th [] [ text "Vo倍率" ]
+                    , th [] [ text "Da倍率" ]
+                    , th [] [ text "Vi倍率" ]
+                    , th [] [ text "思い出アピール" ]
+                    ]
                 ]
-            ]
-        , tbody []
-            [ tr []
-                [ td [] [ viewAppealIdolPulldown model ]
-                , td [] [ viewAppealCoefficient model ]
-                , td [] [ viewAppealPower Vo model ]
-                , td [] [ viewAppealPower Da model ]
-                , td [] [ viewAppealPower Vi model ]
-                , td [] [ viewMemoryAppeal model ]
+            , tbody []
+                [ tr []
+                    [ td [] [ viewAppealIdolPulldown model ]
+                    , td [] [ viewAppealCoefficient model ]
+                    , td [] [ viewAppealPower Vo model ]
+                    , td [] [ viewAppealPower Da model ]
+                    , td [] [ viewAppealPower Vi model ]
+                    , td [] [ viewMemoryAppeal model ]
+                    ]
                 ]
             ]
         ]
@@ -655,15 +794,48 @@ viewMemoryAppealPullDown memoryAppealCoefficient =
 
 
 {-
-   viewFesIdolArea : フェスユニット編成、ステータス設定を行うエリア
+   viewBonusedFesUnitArea : ボーナス適用後のステータスを表示するエリア
 -}
 
 
-viewFesIdolArea : Model -> Html Msg
-viewFesIdolArea model =
+viewBonusedFesUnitArea : Model -> Html Msg
+viewBonusedFesUnitArea model =
+    div []
+        [ h2 [] [ text "ボーナス適用後のステータス" ]
+        , table []
+            [ thead []
+                [ tr []
+                    [ th [] [ text "ポジション" ]
+                    , th [] [ text "Leader" ]
+                    , th [] [ text "Vocal担当" ]
+                    , th [] [ text "Center" ]
+                    , th [] [ text "Dance担当" ]
+                    , th [] [ text "Visual担当" ]
+                    ]
+                ]
+            , tbody []
+                [ writeFesIdol model
+                , writeFesIdolStatus model Vocal
+                , writeFesIdolStatus model Dance
+                , writeFesIdolStatus model Visual
+                , writeFesIdolStatus model Mental
+                ]
+            ]
+        ]
+
+
+
+{-
+   viewFesUnitArea : フェスユニット編成、ステータス設定を行うエリア
+-}
+
+
+viewFesUnitArea : Model -> Html Msg
+viewFesUnitArea model =
     div
         []
-        [ table []
+        [ h2 [] [ text "フェスユニットのステータス指定エリア" ]
+        , table []
             [ thead []
                 [ tr []
                     [ th [] [ text "ポジション" ]
@@ -695,6 +867,18 @@ viewFesIdolStatus model status =
         , td [] [ input [ style "width" "4em", value (getStatus (getFesIdol model Center) status), onInput (ChangeFesIdol Center status) ] [] ]
         , td [] [ input [ style "width" "4em", value (getStatus (getFesIdol model Dancer) status), onInput (ChangeFesIdol Dancer status) ] [] ]
         , td [] [ input [ style "width" "4em", value (getStatus (getFesIdol model Visualist) status), onInput (ChangeFesIdol Visualist status) ] [] ]
+        ]
+
+
+writeFesIdolStatus : Model -> FesIdolStatus -> Html msg
+writeFesIdolStatus model status =
+    tr []
+        [ td [] [ text (statusHeader status) ]
+        , td [] [ text (getStatus model.leader status) ]
+        , td [] [ text (getStatus model.vocalist status) ]
+        , td [] [ text (getStatus model.center status) ]
+        , td [] [ text (getStatus model.dancer status) ]
+        , td [] [ text (getStatus model.visualist status) ]
         ]
 
 
@@ -739,6 +923,18 @@ viewFesIdol model =
         , td [] [ viewIdolPullDown (getFesIdol model Center) Center ]
         , td [] [ viewIdolPullDown (getFesIdol model Dancer) Dancer ]
         , td [] [ viewIdolPullDown (getFesIdol model Visualist) Visualist ]
+        ]
+
+
+writeFesIdol : Model -> Html Msg
+writeFesIdol model =
+    tr []
+        [ td [] [ text (statusHeader Idol) ]
+        , td [] [ text (toString model.leader.idol) ]
+        , td [] [ text (toString model.vocalist.idol) ]
+        , td [] [ text (toString model.center.idol) ]
+        , td [] [ text (toString model.dancer.idol) ]
+        , td [] [ text (toString model.visualist.idol) ]
         ]
 
 
