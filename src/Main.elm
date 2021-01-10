@@ -648,7 +648,7 @@ viewMemoryAppealPullDown memoryAppealCoefficient =
     select
         [ Events.onChange ChangeMemoryAppealCoefficient ]
         [ option [ selected (memoryAppealCoefficient == 0), value "0" ] [ text "なし" ]
-        , option [ selected (memoryAppealCoefficient == 0.5), value "1.0" ] [ text "Bad" ] --FIXME: Badの場合、係数は1.0ではなく0.5
+        , option [ selected (memoryAppealCoefficient == 0.5), value "0.5" ] [ text "Bad" ]
         , option [ selected (memoryAppealCoefficient == 1.5), value "1.5" ] [ text "Good" ]
         ]
 
