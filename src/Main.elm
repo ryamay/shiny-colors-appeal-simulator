@@ -2,7 +2,7 @@ module Main exposing (MemoryLevel, Model, getStatus, main, update, viewIdolPullD
 
 import Browser
 import Html exposing (..)
-import Html.Attributes exposing (max, min, selected, step, style, type_, value)
+import Html.Attributes exposing (checked, max, min, selected, step, style, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Html.Events.Extra as Events
 import Html.Extra as Html
@@ -40,6 +40,7 @@ type alias FesIdol =
     , visual : Int
     , mental : Int
     , memoryLevel : MemoryLevel
+    , gradAbilities : List GradAbility
     }
 
 
@@ -110,11 +111,11 @@ toAppealCoefficient str =
 
 init : Model
 init =
-    { leader = FesIdol Idol.Meguru 500 500 500 300 One
-    , vocalist = FesIdol Idol.Hiori 500 500 500 300 One
-    , center = FesIdol Idol.Mano 500 500 500 300 One
-    , dancer = FesIdol Idol.Kogane 500 500 500 300 One
-    , visualist = FesIdol Idol.Kaho 500 500 500 300 One
+    { leader = FesIdol Idol.Meguru 500 500 500 300 One []
+    , vocalist = FesIdol Idol.Hiori 500 500 500 300 One []
+    , center = FesIdol Idol.Mano 500 500 500 300 One []
+    , dancer = FesIdol Idol.Kogane 500 500 500 300 One []
+    , visualist = FesIdol Idol.Kaho 500 500 500 300 One []
     , idolAppealParam = IdolAppealParam Idol.Mano Perfect 1.0 1.0 1.0 0.0
     , buffs = Buffs 0 0 0
     }
@@ -125,12 +126,13 @@ init =
 
 
 type Msg
-    = ChangeFesIdol FesUnitPosition FesIdolStatus String
+    = ChangeFesIdolStatus FesUnitPosition FesIdolStatus String
     | ChangeAppealer String
     | ChangeAppealCoefficient String
     | ChangeAppealPower AppealType String
     | ChangeMemoryAppealCoefficient String
     | ChangeBuff AppealType String
+    | ChangeFesIdolAbility FesUnitPosition GradAbility
 
 
 
@@ -140,7 +142,7 @@ type Msg
 update : Msg -> Model -> Model
 update msg model =
     case msg of
-        ChangeFesIdol position status value ->
+        ChangeFesIdolStatus position status value ->
             updateFesIdol model position status value
 
         ChangeAppealer appealer ->
@@ -208,6 +210,37 @@ update msg model =
                             { oldBuffs | visual = String.toInt newBuff |> Maybe.withDefault 0 }
             in
             { model | buffs = newBuffs }
+
+        ChangeFesIdolAbility position ability ->
+            let
+                oldIdol =
+                    getFesIdol model position
+
+                newIdol =
+                    { oldIdol
+                        | gradAbilities =
+                            if List.member ability oldIdol.gradAbilities then
+                                List.filter ((/=) ability) oldIdol.gradAbilities
+
+                            else
+                                ability :: oldIdol.gradAbilities
+                    }
+            in
+            case position of
+                Leader ->
+                    updateLeader model newIdol
+
+                Vocalist ->
+                    updateVocalist model newIdol
+
+                Center ->
+                    updateCenter model newIdol
+
+                Dancer ->
+                    updateDancer model newIdol
+
+                Visualist ->
+                    updateVisualist model newIdol
 
 
 updateFesIdol : Model -> FesUnitPosition -> FesIdolStatus -> String -> Model
@@ -325,7 +358,7 @@ applyBonus rawModel =
         bonusedVisualist =
             applyBonusToFesIdol rawModel Visualist
     in
-    Model bonusedLeader bonusedVocalist bonusedCenter bonusedDancer bonusedVocalist rawModel.idolAppealParam rawModel.buffs
+    Model bonusedLeader bonusedVocalist bonusedCenter bonusedDancer bonusedVisualist rawModel.idolAppealParam rawModel.buffs
 
 
 type alias StatusBonus =
@@ -385,6 +418,7 @@ applyBonusToFesIdol rawModel unitPosition =
         (((targetIdol.visual |> Basics.toFloat) * (1.0 + (totalBonus.visual |> Basics.toFloat) * 0.01)) |> Basics.ceiling)
         (((targetIdol.mental |> Basics.toFloat) * (1.0 + (totalBonus.mental |> Basics.toFloat) * 0.01)) |> Basics.ceiling)
         targetIdol.memoryLevel
+        targetIdol.gradAbilities
 
 
 calcTotalPositionBonus : FesUnitPosition -> FesIdol -> StatusBonus
@@ -508,10 +542,7 @@ memoryAppealBase model judgeType memoryCo =
             ]
 
         unitBuff =
-            1.0
-                + (List.map convertToUnitBuff unitIdolsMemoryLv
-                    |> List.sum
-                  )
+            1.0 + (List.map convertToUnitBuff unitIdolsMemoryLv |> List.sum)
     in
     -- 各属性のjudgeへの思い出アピール値を計算する
     List.map2 (basicCoefficent model) appealTypes (List.repeat 3 memoryCo)
@@ -854,6 +885,7 @@ viewFesUnitArea model =
                 , viewFesIdolStatus model Visual
                 , viewFesIdolStatus model Mental
                 , viewFesIdolMemoryLevel model
+                , viewGradAbilities model
                 ]
             ]
         ]
@@ -863,11 +895,11 @@ viewFesIdolStatus : Model -> FesIdolStatus -> Html Msg
 viewFesIdolStatus model status =
     tr []
         [ td [] [ text (statusHeader status) ]
-        , td [] [ input [ style "width" "4em", value (getStatus (getFesIdol model Leader) status), onInput (ChangeFesIdol Leader status) ] [] ]
-        , td [] [ input [ style "width" "4em", value (getStatus (getFesIdol model Vocalist) status), onInput (ChangeFesIdol Vocalist status) ] [] ]
-        , td [] [ input [ style "width" "4em", value (getStatus (getFesIdol model Center) status), onInput (ChangeFesIdol Center status) ] [] ]
-        , td [] [ input [ style "width" "4em", value (getStatus (getFesIdol model Dancer) status), onInput (ChangeFesIdol Dancer status) ] [] ]
-        , td [] [ input [ style "width" "4em", value (getStatus (getFesIdol model Visualist) status), onInput (ChangeFesIdol Visualist status) ] [] ]
+        , td [] [ input [ style "width" "4em", value (getStatus (getFesIdol model Leader) status), onInput (ChangeFesIdolStatus Leader status) ] [] ]
+        , td [] [ input [ style "width" "4em", value (getStatus (getFesIdol model Vocalist) status), onInput (ChangeFesIdolStatus Vocalist status) ] [] ]
+        , td [] [ input [ style "width" "4em", value (getStatus (getFesIdol model Center) status), onInput (ChangeFesIdolStatus Center status) ] [] ]
+        , td [] [ input [ style "width" "4em", value (getStatus (getFesIdol model Dancer) status), onInput (ChangeFesIdolStatus Dancer status) ] [] ]
+        , td [] [ input [ style "width" "4em", value (getStatus (getFesIdol model Visualist) status), onInput (ChangeFesIdolStatus Visualist status) ] [] ]
         ]
 
 
@@ -895,6 +927,17 @@ viewFesIdolMemoryLevel model =
         ]
 
 
+viewMemoryLevelPullDown : FesIdol -> FesUnitPosition -> Html Msg
+viewMemoryLevelPullDown fesIdol position =
+    let
+        memoryLevels =
+            [ Zero, One, Two, Three, Four, Five ]
+    in
+    select
+        [ Events.onChange (ChangeFesIdolStatus position MemoryLevel) ]
+        (List.map (viewMemoryLevelOption (getStatus fesIdol MemoryLevel)) memoryLevels)
+
+
 viewMemoryLevelOption : String -> MemoryLevel -> Html Msg
 viewMemoryLevelOption selectedLevel memoryLevel =
     option
@@ -904,15 +947,46 @@ viewMemoryLevelOption selectedLevel memoryLevel =
         [ text (memoryLevel |> convertToInt |> String.fromInt) ]
 
 
-viewMemoryLevelPullDown : FesIdol -> FesUnitPosition -> Html Msg
-viewMemoryLevelPullDown fesIdol position =
+viewGradAbilities : Model -> Html Msg
+viewGradAbilities model =
+    tr []
+        [ td [] [ text "G.R.A.D.アビリティ" ]
+        , td [] [ viewGradAbilitiesOf Leader model.leader.gradAbilities ]
+        , td [] [ viewGradAbilitiesOf Vocalist model.vocalist.gradAbilities ]
+        , td [] [ viewGradAbilitiesOf Center model.center.gradAbilities ]
+        , td [] [ viewGradAbilitiesOf Dancer model.dancer.gradAbilities ]
+        , td [] [ viewGradAbilitiesOf Visualist model.visualist.gradAbilities ]
+        ]
+
+
+viewGradAbilitiesOf : FesUnitPosition -> List GradAbility -> Html Msg
+viewGradAbilitiesOf position gradAbilities =
     let
-        memoryLevels =
-            [ Zero, One, Two, Three, Four, Five ]
+        allAbilities =
+            (List.map suitable1and2 [ Leader, Vocalist, Center, Dancer, Visualist ] |> List.concat)
+                ++ [ Suitable_all_1
+                   , Suitable_all_2
+                   , Slowstarter
+                   , Startdash
+                   , Favorite -- 人気者
+                   , Calm -- 物静か
+                   , Spotlighted -- 注目の的
+                   , Humble -- ひかえめ
+                   , Perfectly
+                   , AppealUp_theMoreMemoryGage
+                   , AppealUp_theLessMemoryGage
+                   ]
+                ++ List.map BondsWith Idol.idols
     in
-    select
-        [ Events.onChange (ChangeFesIdol position MemoryLevel) ]
-        (List.map (viewMemoryLevelOption (getStatus fesIdol MemoryLevel)) memoryLevels)
+    div [] (List.map (viewAbility position gradAbilities) allAbilities)
+
+
+viewAbility : FesUnitPosition -> List GradAbility -> GradAbility -> Html Msg
+viewAbility position selectedAbilities abilityType =
+    div []
+        [ input [ type_ "checkbox", onClick (ChangeFesIdolAbility position abilityType), checked (List.member abilityType selectedAbilities) ] []
+        , text (gradAbilityToString abilityType)
+        ]
 
 
 viewFesIdol : Model -> Html Msg
@@ -942,7 +1016,7 @@ writeFesIdol model =
 viewIdolPullDown : FesIdol -> FesUnitPosition -> Html Msg
 viewIdolPullDown fesIdol position =
     select
-        [ Events.onChange (ChangeFesIdol position Idol) ]
+        [ Events.onChange (ChangeFesIdolStatus position Idol) ]
         (List.map (viewIdolOption (getStatus fesIdol Idol)) Idol.idols)
 
 
@@ -1148,3 +1222,110 @@ convertToUnitBuff memoryLevel =
 
         Five ->
             0.075
+
+
+type GradAbility
+    = Suitable1 FesUnitPosition
+    | Suitable2 FesUnitPosition
+    | Suitable_all_1
+    | Suitable_all_2
+      -- | WeakMentality
+      -- | StrongMentality
+      -- | MemoryGage_plusplus
+      -- | MemoryGage_plus
+      -- | MemoryGage_minus
+      -- | Remove_melancholy_1
+      -- | Remove_melancholy_2
+      -- | Remove_relax_1
+      -- | Remove_relax_2
+      -- | RaiseLimit_plus_vocal
+      -- | RaiseLimit_plusplus_vocal
+      -- | RaiseLimit_plus_dance
+      -- | RaiseLimit_plusplus_dance
+      -- | RaiseLimit_plus_visual
+      -- | RaiseLimit_plusplus_visual
+      -- | RaiseLimit_plus_mental
+      -- | RaiseLimit_plusplus_mental
+      -- | Master AppealType
+      -- | MentalRecovery_plus
+      -- | MentalRecovery_minus
+    | Slowstarter
+    | Startdash
+    | Favorite -- 人気者
+    | Calm -- 物静か
+    | Spotlighted -- 注目の的
+    | Humble -- ひかえめ
+    | Perfectly
+    | AppealUp_theMoreMemoryGage
+    | AppealUp_theLessMemoryGage
+    | BondsWith Idol.Idol
+
+
+gradAbilityToString : GradAbility -> String
+gradAbilityToString ability =
+    case ability of
+        Suitable1 unitPosition ->
+            unitPositionToString unitPosition ++ "適正◯"
+
+        Suitable2 unitPosition ->
+            unitPositionToString unitPosition ++ "適正◎"
+
+        Suitable_all_1 ->
+            "オールラウンダー◯"
+
+        Suitable_all_2 ->
+            "オールラウンダー◎"
+
+        Slowstarter ->
+            "スロースターター"
+
+        Startdash ->
+            "スタートダッシュ"
+
+        Favorite ->
+            "人気者"
+
+        Calm ->
+            "物静か"
+
+        Spotlighted ->
+            "注目の的"
+
+        Humble ->
+            "ひかえめ"
+
+        Perfectly ->
+            "パーフェクトリィ"
+
+        AppealUp_theMoreMemoryGage ->
+            "アピールUP（思い出高）"
+
+        AppealUp_theLessMemoryGage ->
+            "アピールUP（思い出低）"
+
+        BondsWith idol ->
+            Idol.toFullName idol ++ "との絆"
+
+
+suitable1and2 : FesUnitPosition -> List GradAbility
+suitable1and2 position =
+    [ Suitable1 position, Suitable2 position ]
+
+
+unitPositionToString : FesUnitPosition -> String
+unitPositionToString position =
+    case position of
+        Leader ->
+            "Leader"
+
+        Vocalist ->
+            "Vocal"
+
+        Center ->
+            "Center"
+
+        Dancer ->
+            "Dance"
+
+        Visualist ->
+            "Visual"

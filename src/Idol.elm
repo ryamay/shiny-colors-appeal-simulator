@@ -105,6 +105,34 @@ toString idol =
             "Koito"
 
 
+toFullName: Idol -> String
+toFullName idol =
+    case idol of
+        Mano ->"櫻木真乃"
+        Hiori->"風野灯織"
+        Meguru->"八宮めぐる"
+        Kogane->"月岡恋鐘"
+        Kiriko->"幽谷霧子"
+        Yuika->"三峰結華"
+        Sakuya->"白瀬咲耶"
+        Mamimi->"田中摩美々"
+        Kaho->"小宮果穂"
+        Rinze->"杜野凛世"
+        Chiyoko->"園田智代子"
+        Natsuha->"有栖川夏葉"
+        Juri->"西城樹里"
+        Chiyuki->"桑山千雪"
+        Tenka->"大崎甜花"
+        Amana->"大崎甘奈"
+        Asahi->"芹沢あさひ"
+        Fuyuko->"黛冬優子"
+        Mei->"和泉愛依"
+        Toru->"浅倉透"
+        Madoka->"樋口円香"
+        Koito->"福丸小糸"
+        Hinana->"市川雛菜"
+
+
 fromString : String -> Idol
 fromString str =
     case str of
