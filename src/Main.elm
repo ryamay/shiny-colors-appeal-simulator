@@ -1,4 +1,4 @@
-module Main exposing (Idol, MemoryLevel, Model, getStatus, idols, main, update, viewIdolPullDown)
+module Main exposing (MemoryLevel, Model, getStatus, main, update, viewIdolPullDown)
 
 import Browser
 import Html exposing (..)
@@ -6,6 +6,7 @@ import Html.Attributes exposing (max, min, selected, step, style, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Html.Events.Extra as Events
 import Html.Extra as Html
+import Idol
 
 
 
@@ -33,7 +34,7 @@ type alias Model =
 
 
 type alias FesIdol =
-    { idol : Idol
+    { idol : Idol.Idol
     , vocal : Int
     , dance : Int
     , visual : Int
@@ -43,7 +44,7 @@ type alias FesIdol =
 
 
 type alias IdolAppealParam =
-    { idol : Idol
+    { idol : Idol.Idol
     , appealCoefficient : AppealCoefficient
     , vocal : Float
     , dance : Float
@@ -109,12 +110,12 @@ toAppealCoefficient str =
 
 init : Model
 init =
-    { leader = FesIdol Meguru 500 500 500 300 One
-    , vocalist = FesIdol Hiori 500 500 500 300 One
-    , center = FesIdol Mano 500 500 500 300 One
-    , dancer = FesIdol Kogane 500 500 500 300 One
-    , visualist = FesIdol Kaho 500 500 500 300 One
-    , idolAppealParam = IdolAppealParam Mano Perfect 1.0 1.0 1.0 0.0
+    { leader = FesIdol Idol.Meguru 500 500 500 300 One
+    , vocalist = FesIdol Idol.Hiori 500 500 500 300 One
+    , center = FesIdol Idol.Mano 500 500 500 300 One
+    , dancer = FesIdol Idol.Kogane 500 500 500 300 One
+    , visualist = FesIdol Idol.Kaho 500 500 500 300 One
+    , idolAppealParam = IdolAppealParam Idol.Mano Perfect 1.0 1.0 1.0 0.0
     , buffs = Buffs 0 0 0
     }
 
@@ -148,7 +149,7 @@ update msg model =
                     model.idolAppealParam
 
                 newParam =
-                    { oldParam | idol = toIdol appealer }
+                    { oldParam | idol = Idol.fromString appealer }
             in
             { model | idolAppealParam = newParam }
 
@@ -218,7 +219,7 @@ updateFesIdol model position status value =
         newIdol =
             case status of
                 Idol ->
-                    { oldIdol | idol = toIdol value }
+                    { oldIdol | idol = Idol.fromString value }
 
                 Vocal ->
                     { oldIdol | vocal = String.toInt value |> Maybe.withDefault 0 }
@@ -361,8 +362,8 @@ applyBonusToFesIdol rawModel unitPosition =
 
         existsSameUnit =
             List.filter ((/=) targetIdol.idol) unitIdols
-                |> List.map whichUnit
-                |> List.any ((==) (whichUnit targetIdol.idol))
+                |> List.map Idol.whichUnit
+                |> List.any ((==) (Idol.whichUnit targetIdol.idol))
 
         unitBonus =
             if existsSameUnit then
@@ -580,7 +581,7 @@ fesAppealBase model appealType =
     floor (2.0 * appealerStatus + 0.5 * statusSumOfNotAppealers) |> Basics.toFloat
 
 
-sameIdol : Idol -> FesIdol -> Bool
+sameIdol : Idol.Idol -> FesIdol -> Bool
 sameIdol idol fesIdol =
     idol == fesIdol.idol
 
@@ -738,10 +739,10 @@ viewAppealIdolPulldown model =
     select
         [ Events.onChange ChangeAppealer ]
         --(List.map (viewMemoryLevelOption (getStatus fesIdol MemoryLevel)) (List.range 0 5))
-        (List.map (viewIdolOption (toString model.idolAppealParam.idol)) (listFesUnitMember model))
+        (List.map (viewIdolOption (Idol.toString model.idolAppealParam.idol)) (listFesUnitMember model))
 
 
-listFesUnitMember : Model -> List Idol
+listFesUnitMember : Model -> List Idol.Idol
 listFesUnitMember model =
     [ model.leader.idol, model.vocalist.idol, model.center.idol, model.dancer.idol, model.visualist.idol ]
 
@@ -930,11 +931,11 @@ writeFesIdol : Model -> Html Msg
 writeFesIdol model =
     tr []
         [ td [] [ text (statusHeader Idol) ]
-        , td [] [ text (toString model.leader.idol) ]
-        , td [] [ text (toString model.vocalist.idol) ]
-        , td [] [ text (toString model.center.idol) ]
-        , td [] [ text (toString model.dancer.idol) ]
-        , td [] [ text (toString model.visualist.idol) ]
+        , td [] [ text (Idol.toString model.leader.idol) ]
+        , td [] [ text (Idol.toString model.vocalist.idol) ]
+        , td [] [ text (Idol.toString model.center.idol) ]
+        , td [] [ text (Idol.toString model.dancer.idol) ]
+        , td [] [ text (Idol.toString model.visualist.idol) ]
         ]
 
 
@@ -942,14 +943,14 @@ viewIdolPullDown : FesIdol -> FesUnitPosition -> Html Msg
 viewIdolPullDown fesIdol position =
     select
         [ Events.onChange (ChangeFesIdol position Idol) ]
-        (List.map (viewIdolOption (getStatus fesIdol Idol)) idols)
+        (List.map (viewIdolOption (getStatus fesIdol Idol)) Idol.idols)
 
 
-viewIdolOption : String -> Idol -> Html Msg
+viewIdolOption : String -> Idol.Idol -> Html Msg
 viewIdolOption selectedIdol idol =
     option
-        [ selected (toString idol == selectedIdol), value (toString idol) ]
-        [ text (toString idol) ]
+        [ selected (Idol.toString idol == selectedIdol), value (Idol.toString idol) ]
+        [ text (Idol.toString idol) ]
 
 
 getFesIdol : Model -> FesUnitPosition -> FesIdol
@@ -975,7 +976,7 @@ getStatus : FesIdol -> FesIdolStatus -> String
 getStatus fesIdol status =
     case status of
         Idol ->
-            toString fesIdol.idol
+            Idol.toString fesIdol.idol
 
         Vocal ->
             String.fromInt fesIdol.vocal
@@ -1030,196 +1031,6 @@ statusHeader status =
 
 
 --- type
-
-
-type Idol
-    = Mano
-    | Hiori
-    | Meguru
-    | Kogane
-    | Kiriko
-    | Yuika
-    | Sakuya
-    | Mamimi
-    | Kaho
-    | Rinze
-    | Chiyoko
-    | Natsuha
-    | Juri
-    | Chiyuki
-    | Tenka
-    | Amana
-    | Asahi
-    | Fuyuko
-    | Mei
-    | Toru
-    | Madoka
-    | Hinana
-    | Koito
-
-
-idols : List Idol
-idols =
-    [ Mano, Hiori, Meguru, Kogane, Kiriko, Yuika, Sakuya, Mamimi, Kaho, Rinze, Chiyoko, Natsuha, Juri, Chiyuki, Tenka, Amana, Asahi, Fuyuko, Mei, Toru, Madoka, Hinana, Koito ]
-
-
-toString : Idol -> String
-toString idol =
-    case idol of
-        Mano ->
-            "Mano"
-
-        Hiori ->
-            "Hiori"
-
-        Meguru ->
-            "Meguru"
-
-        Kogane ->
-            "Kogane"
-
-        Kiriko ->
-            "Kiriko"
-
-        Yuika ->
-            "Yuika"
-
-        Sakuya ->
-            "Sakuya"
-
-        Mamimi ->
-            "Mamimi"
-
-        Kaho ->
-            "Kaho"
-
-        Rinze ->
-            "Rinze"
-
-        Chiyoko ->
-            "Chiyoko"
-
-        Natsuha ->
-            "Natsuha"
-
-        Juri ->
-            "Juri"
-
-        Chiyuki ->
-            "Chiyuki"
-
-        Tenka ->
-            "Tenka"
-
-        Amana ->
-            "Amana"
-
-        Asahi ->
-            "Asahi"
-
-        Fuyuko ->
-            "Fuyuko"
-
-        Mei ->
-            "Mei"
-
-        Toru ->
-            "Toru"
-
-        Madoka ->
-            "Madoka"
-
-        Hinana ->
-            "Hinana"
-
-        Koito ->
-            "Koito"
-
-
-toIdol : String -> Idol
-toIdol str =
-    case str of
-        "Mano" ->
-            Mano
-
-        "Hiori" ->
-            Hiori
-
-        "Meguru" ->
-            Meguru
-
-        "Kogane" ->
-            Kogane
-
-        "Kiriko" ->
-            Kiriko
-
-        "Yuika" ->
-            Yuika
-
-        "Sakuya" ->
-            Sakuya
-
-        "Mamimi" ->
-            Mamimi
-
-        "Kaho" ->
-            Kaho
-
-        "Rinze" ->
-            Rinze
-
-        "Chiyoko" ->
-            Chiyoko
-
-        "Natsuha" ->
-            Natsuha
-
-        "Juri" ->
-            Juri
-
-        "Chiyuki" ->
-            Chiyuki
-
-        "Tenka" ->
-            Tenka
-
-        "Amana" ->
-            Amana
-
-        "Asahi" ->
-            Asahi
-
-        "Fuyuko" ->
-            Fuyuko
-
-        "Mei" ->
-            Mei
-
-        "Toru" ->
-            Toru
-
-        "Madoka" ->
-            Madoka
-
-        "Hinana" ->
-            Hinana
-
-        "Koito" ->
-            Koito
-
-        -- マッチしなかったらManoに設定
-        _ ->
-            Mano
-
-
-type Unit
-    = IlluminationStars
-    | LAntica
-    | HokagoClimaxGirls
-    | Alstroemeria
-    | Straylight
-    | Noctchill
 
 
 type FesUnitPosition
@@ -1337,76 +1148,3 @@ convertToUnitBuff memoryLevel =
 
         Five ->
             0.075
-
-
-whichUnit : Idol -> Unit
-whichUnit idol =
-    case idol of
-        Mano ->
-            IlluminationStars
-
-        Hiori ->
-            IlluminationStars
-
-        Meguru ->
-            IlluminationStars
-
-        Kogane ->
-            LAntica
-
-        Kiriko ->
-            LAntica
-
-        Yuika ->
-            LAntica
-
-        Sakuya ->
-            LAntica
-
-        Mamimi ->
-            LAntica
-
-        Kaho ->
-            HokagoClimaxGirls
-
-        Rinze ->
-            HokagoClimaxGirls
-
-        Chiyoko ->
-            HokagoClimaxGirls
-
-        Natsuha ->
-            HokagoClimaxGirls
-
-        Juri ->
-            HokagoClimaxGirls
-
-        Chiyuki ->
-            Alstroemeria
-
-        Tenka ->
-            Alstroemeria
-
-        Amana ->
-            Alstroemeria
-
-        Asahi ->
-            Straylight
-
-        Fuyuko ->
-            Straylight
-
-        Mei ->
-            Straylight
-
-        Toru ->
-            Noctchill
-
-        Madoka ->
-            Noctchill
-
-        Hinana ->
-            Noctchill
-
-        Koito ->
-            Noctchill
