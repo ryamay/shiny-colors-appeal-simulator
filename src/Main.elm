@@ -1,12 +1,13 @@
-module Main exposing (MemoryLevel, Model, getStatus, main, update, viewIdolPullDown)
+module Main exposing (Buffs, MemoryLevel, Model, getStatus, main, update, viewIdolPullDown)
 
 import Browser
 import Html exposing (..)
-import Html.Attributes exposing (checked, max, min, selected, step, style, type_, value)
+import Html.Attributes exposing (checked, colspan, max, min, rowspan, selected, step, style, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Html.Events.Extra as Events
 import Html.Extra as Html
 import Idol
+import Round
 
 
 
@@ -30,6 +31,7 @@ type alias Model =
     , visualist : FesIdol
     , idolAppealParam : IdolAppealParam
     , buffs : Buffs
+    , condition : Condition
     }
 
 
@@ -65,6 +67,17 @@ type alias Buffs =
     { vocal : Int
     , dance : Int
     , visual : Int
+    }
+
+
+type ConditionType
+    = TurnCount
+    | MemoryGaugePercentage
+
+
+type alias Condition =
+    { turnCount : Int
+    , memoryGaugePercentage : Int
     }
 
 
@@ -111,13 +124,14 @@ toAppealCoefficient str =
 
 init : Model
 init =
-    { leader = FesIdol Idol.Meguru 500 500 500 300 One []
+    { leader = FesIdol Idol.Meguru 500 500 500 300 One [ Slowstarter, Startdash, Favorite, AppealUp_theMoreMemoryGauge, AppealUp_theLessMemoryGauge ]
     , vocalist = FesIdol Idol.Hiori 500 500 500 300 One []
     , center = FesIdol Idol.Mano 500 500 500 300 One []
     , dancer = FesIdol Idol.Kogane 500 500 500 300 One []
     , visualist = FesIdol Idol.Kaho 500 500 500 300 One []
     , idolAppealParam = IdolAppealParam Idol.Mano Perfect 1.0 1.0 1.0 0.0
     , buffs = Buffs 0 0 0
+    , condition = Condition 1 70
     }
 
 
@@ -133,6 +147,7 @@ type Msg
     | ChangeMemoryAppealCoefficient String
     | ChangeBuff AppealType String
     | ChangeFesIdolAbility FesUnitPosition GradAbility
+    | ChangeCondition ConditionType String
 
 
 
@@ -242,6 +257,21 @@ update msg model =
                 Visualist ->
                     updateVisualist model newIdol
 
+        ChangeCondition conditionType value ->
+            let
+                oldCondition =
+                    model.condition
+
+                newCondition =
+                    case conditionType of
+                        TurnCount ->
+                            { oldCondition | turnCount = value |> String.toInt |> Maybe.withDefault 1 }
+
+                        MemoryGaugePercentage ->
+                            { oldCondition | memoryGaugePercentage = value |> String.toInt |> Maybe.withDefault 70 }
+            in
+            { model | condition = newCondition }
+
 
 updateFesIdol : Model -> FesUnitPosition -> FesIdolStatus -> String -> Model
 updateFesIdol model position status value =
@@ -311,11 +341,6 @@ updateVisualist model newVisualist =
     { model | visualist = newVisualist }
 
 
-updateIdolAppealParam : Model -> IdolAppealParam -> Model
-updateIdolAppealParam model newIdolAppealParam =
-    { model | idolAppealParam = newIdolAppealParam }
-
-
 
 -- VIEW
 
@@ -358,7 +383,7 @@ applyBonus rawModel =
         bonusedVisualist =
             applyBonusToFesIdol rawModel Visualist
     in
-    Model bonusedLeader bonusedVocalist bonusedCenter bonusedDancer bonusedVisualist rawModel.idolAppealParam rawModel.buffs
+    Model bonusedLeader bonusedVocalist bonusedCenter bonusedDancer bonusedVisualist rawModel.idolAppealParam rawModel.buffs rawModel.condition
 
 
 type alias StatusBonus =
@@ -458,8 +483,79 @@ sum statusBonus1 statusBonus2 =
 
 calcGradPositionBonus : FesUnitPosition -> FesIdol -> StatusBonus
 calcGradPositionBonus unitPosition fesIdol =
-    --TODO: G.R.A.D.アビリティについては未反映
-    StatusBonus 0 0 0 0
+    case unitPosition of
+        Leader ->
+            StatusBonus 0 0 0 (calcGradPositionBonusPercentage Leader fesIdol.gradAbilities)
+
+        Vocalist ->
+            StatusBonus (calcGradPositionBonusPercentage Vocalist fesIdol.gradAbilities) 0 0 0
+
+        Center ->
+            StatusBonus
+                (calcGradPositionBonusPercentage Center fesIdol.gradAbilities)
+                (calcGradPositionBonusPercentage Center fesIdol.gradAbilities)
+                (calcGradPositionBonusPercentage Center fesIdol.gradAbilities)
+                0
+
+        Dancer ->
+            StatusBonus 0 (calcGradPositionBonusPercentage Dancer fesIdol.gradAbilities) 0 0
+
+        Visualist ->
+            StatusBonus 0 0 (calcGradPositionBonusPercentage Visualist fesIdol.gradAbilities) 0
+
+
+calcGradPositionBonusPercentage : FesUnitPosition -> List GradAbility -> Int
+calcGradPositionBonusPercentage position abilities =
+    case position of
+        Center ->
+            List.foldr (+)
+                0
+                [ if List.member (Suitable1 Center) abilities then
+                    5
+
+                  else
+                    0
+                , if List.member (Suitable2 Center) abilities then
+                    10
+
+                  else
+                    0
+                , if List.member Suitable_all_1 abilities then
+                    5
+
+                  else
+                    0
+                , if List.member Suitable_all_2 abilities then
+                    10
+
+                  else
+                    0
+                ]
+
+        other ->
+            List.foldr (+)
+                0
+                [ if List.member (Suitable1 other) abilities then
+                    10
+
+                  else
+                    0
+                , if List.member (Suitable2 other) abilities then
+                    15
+
+                  else
+                    0
+                , if List.member Suitable_all_1 abilities then
+                    5
+
+                  else
+                    0
+                , if List.member Suitable_all_2 abilities then
+                    10
+
+                  else
+                    0
+                ]
 
 
 viewJudgeArea : Model -> Html msg
@@ -576,7 +672,7 @@ basicCoefficent : Model -> AppealType -> Float -> Float
 basicCoefficent model appealType appealCoefficient =
     floor
         (fesAppealBase model appealType
-            * (1 + Basics.toFloat (calcTotalBuff model appealType) / 100)
+            * (1.0 + (calcTotalBuff model appealType / 100.0))
             * appealCoefficient
         )
         |> Basics.toFloat
@@ -652,23 +748,41 @@ typeHeader appealType =
             "Vi"
 
 
-calcTotalBuff : Model -> AppealType -> Basics.Int
+calcTotalBuff : Model -> AppealType -> Float
 calcTotalBuff model buffType =
     case buffType of
         Vo ->
-            model.buffs.vocal + calcGradBuff model
+            (model.buffs.vocal |> Basics.toFloat) + calcGradBuff model
 
         Da ->
-            model.buffs.dance + calcGradBuff model
+            (model.buffs.dance |> Basics.toFloat) + calcGradBuff model
 
         Vi ->
-            model.buffs.visual + calcGradBuff model
+            (model.buffs.visual |> Basics.toFloat) + calcGradBuff model
 
 
-calcGradBuff : Model -> Int
+calcGradBuff : Model -> Float
 calcGradBuff model =
-    --TODO: G.R.A.D.アビリティのバフ集計処理を作成する。
-    0
+    let
+        gradAbilities =
+            [ Startdash, Slowstarter, AppealUp_theMoreMemoryGauge, AppealUp_theLessMemoryGauge ]
+
+        gradAbilitiesBuff =
+            List.map2 calcGradAbiiltyBuff gradAbilities (List.repeat (List.length gradAbilities) model.condition)
+
+        gradAbilitiesCount =
+            List.map2 countAbility (List.repeat (List.length gradAbilities) model) gradAbilities
+                |> List.map Basics.toFloat
+
+        totalBondsBuff =
+            (List.map BondsWith [ model.leader.idol, model.vocalist.idol, model.center.idol, model.dancer.idol, model.visualist.idol ]
+                |> List.map (countAbility model)
+                |> List.sum
+                |> Basics.toFloat
+            )
+                * 5.0
+    in
+    (List.map2 (*) gradAbilitiesBuff gradAbilitiesCount |> List.sum) + totalBondsBuff
 
 
 
@@ -680,7 +794,8 @@ calcGradBuff model =
 viewBuffArea : Model -> Html Msg
 viewBuffArea model =
     div []
-        [ h2 [] [ text "バフ指定エリア" ]
+        [ h2 [] [ text "バフエリア" ]
+        , h3 [] [ text "各ステータスバフ（アクティブ・パッシブ）" ]
         , table []
             [ thead []
                 [ tr []
@@ -697,6 +812,158 @@ viewBuffArea model =
                     ]
                 ]
             ]
+        , h3 [] [ text "G.R.A.D.バフ" ]
+        , table []
+            [ thead []
+                [ tr []
+                    [ th [] [ text "アビリティ" ]
+                    , th [] [ text "所持数" ]
+                    , th [ colspan 2 ] [ text "パラメータ" ]
+                    , th [] [ text "バフ合計" ]
+                    ]
+                ]
+            , tbody []
+                ([ tr []
+                    [ td [] [ text (gradAbilityToString Startdash) ]
+                    , td [] [ text (countAbility model Startdash |> String.fromInt) ]
+                    , td [ rowspan 2 ] [ text "経過ターン数" ]
+                    , td [ rowspan 2 ] [ viewTurnSlider model ]
+                    , td [] [ text (((calcGradAbiiltyBuff Startdash model.condition * Basics.toFloat (countAbility model Startdash)) |> Round.round 1) ++ "%") ]
+                    ]
+                 , tr []
+                    [ td [] [ text (gradAbilityToString Slowstarter) ]
+                    , td [] [ text (countAbility model Slowstarter |> String.fromInt) ]
+                    , td [] [ text (((calcGradAbiiltyBuff Slowstarter model.condition * Basics.toFloat (countAbility model Slowstarter)) |> Round.round 1) ++ "%") ]
+                    ]
+                 , tr []
+                    [ td [] [ text (gradAbilityToString AppealUp_theMoreMemoryGauge) ]
+                    , td [] [ text (countAbility model AppealUp_theMoreMemoryGauge |> String.fromInt) ]
+                    , td [ rowspan 2 ] [ text "思い出ゲージ" ]
+                    , td [ rowspan 2 ] [ viewMemoryGaugeSlider model ]
+                    , td [] [ text (((calcGradAbiiltyBuff AppealUp_theMoreMemoryGauge model.condition * Basics.toFloat (countAbility model AppealUp_theMoreMemoryGauge)) |> Round.round 1) ++ "%") ]
+                    ]
+                 , tr []
+                    [ td [] [ text (gradAbilityToString AppealUp_theLessMemoryGauge) ]
+                    , td [] [ text (countAbility model AppealUp_theLessMemoryGauge |> String.fromInt) ]
+                    , td [] [ text (((calcGradAbiiltyBuff AppealUp_theLessMemoryGauge model.condition * Basics.toFloat (countAbility model AppealUp_theLessMemoryGauge)) |> Round.round 1) ++ "%") ]
+                    ]
+                 ]
+                    ++ viewBondsArea model
+                )
+            ]
+        ]
+
+
+countAbility : Model -> GradAbility -> Int
+countAbility model ability =
+    (model.leader.gradAbilities ++ model.vocalist.gradAbilities ++ model.center.gradAbilities ++ model.dancer.gradAbilities ++ model.visualist.gradAbilities)
+        |> List.filter ((==) ability)
+        |> List.length
+
+
+calcGradAbiiltyBuff : GradAbility -> Condition -> Float
+calcGradAbiiltyBuff ability condition =
+    case ability of
+        Startdash ->
+            if condition.turnCount > 0 && condition.turnCount <= 10 then
+                4.0 + 16.0 / 9.0 * Basics.toFloat (condition.turnCount - 1)
+
+            else if condition.turnCount > 10 then
+                20.0
+
+            else
+                0.0
+
+        Slowstarter ->
+            if condition.turnCount > 0 && condition.turnCount <= 10 then
+                10.0 - 8.0 / 9.0 * Basics.toFloat (condition.turnCount - 1)
+
+            else if condition.turnCount > 10 then
+                2.0
+
+            else
+                0
+
+        AppealUp_theMoreMemoryGauge ->
+            if condition.memoryGaugePercentage >= 0 && condition.memoryGaugePercentage <= 100 then
+                2.0 + 8.0 * Basics.toFloat condition.memoryGaugePercentage / 100.0
+
+            else
+                0
+
+        AppealUp_theLessMemoryGauge ->
+            if condition.memoryGaugePercentage >= 0 && condition.memoryGaugePercentage <= 100 then
+                20.0 - 16.0 * Basics.toFloat condition.memoryGaugePercentage / 100.0
+
+            else
+                0
+
+        _ ->
+            0
+
+
+viewBondsArea : Model -> List (Html msg)
+viewBondsArea model =
+    let
+        bondsCount =
+            List.map BondsWith [ model.leader.idol, model.vocalist.idol, model.center.idol, model.dancer.idol, model.visualist.idol ]
+                |> List.map (countAbility model)
+                |> List.sum
+    in
+    [ tr []
+        [ td [] [ text (Idol.toFullName model.leader.idol ++ "との絆") ]
+        , td [ rowspan 5, colspan 3 ]
+            [ text (String.fromInt bondsCount)
+            ]
+        , td [ rowspan 5 ]
+            [ text (((bondsCount * 5) |> Basics.toFloat |> Round.round 1) ++ "%") ]
+        ]
+    , tr []
+        [ td [ colspan 4 ] [ text (Idol.toFullName model.vocalist.idol ++ "との絆") ]
+        ]
+    , tr []
+        [ td [ colspan 4 ] [ text (Idol.toFullName model.center.idol ++ "との絆") ]
+        ]
+    , tr []
+        [ td [ colspan 4 ] [ text (Idol.toFullName model.dancer.idol ++ "との絆") ]
+        ]
+    , tr []
+        [ td [ colspan 4 ] [ text (Idol.toFullName model.visualist.idol ++ "との絆") ]
+        ]
+    ]
+
+
+viewTurnSlider : Model -> Html Msg
+viewTurnSlider model =
+    div []
+        [ input
+            [ type_ "range"
+            , Html.Attributes.min "1"
+            , Html.Attributes.max "10"
+            , step "1"
+            , value (model.condition.turnCount |> String.fromInt)
+            , onInput (ChangeCondition TurnCount)
+            ]
+            []
+        , input [ style "width" "4em", value (model.condition.turnCount |> String.fromInt), onInput (ChangeCondition TurnCount) ] []
+        , text "ターン目"
+        ]
+
+
+viewMemoryGaugeSlider : Model -> Html Msg
+viewMemoryGaugeSlider model =
+    div []
+        [ input
+            [ type_ "range"
+            , Html.Attributes.min "0"
+            , Html.Attributes.max "100"
+            , step "5"
+            , value (model.condition.memoryGaugePercentage |> String.fromInt)
+            , onInput (ChangeCondition MemoryGaugePercentage)
+            ]
+            []
+        , input [ style "width" "4em", value (model.condition.memoryGaugePercentage |> String.fromInt), onInput (ChangeCondition MemoryGaugePercentage) ] []
+        , text "%"
         ]
 
 
@@ -713,6 +980,7 @@ viewBuffSlider appealType model =
             ]
             []
         , input [ style "width" "4em", value (getBuff model.buffs appealType |> String.fromInt), onInput (ChangeBuff appealType) ] []
+        , text "%"
         ]
 
 
@@ -970,11 +1238,12 @@ viewGradAbilitiesOf position gradAbilities =
                    , Startdash
                    , Favorite -- 人気者
                    , Calm -- 物静か
-                   , Spotlighted -- 注目の的
-                   , Humble -- ひかえめ
+
+                   --    , Spotlighted -- 注目の的
+                   --    , Humble -- ひかえめ
                    , Perfectly
-                   , AppealUp_theMoreMemoryGage
-                   , AppealUp_theLessMemoryGage
+                   , AppealUp_theMoreMemoryGauge
+                   , AppealUp_theLessMemoryGauge
                    ]
                 ++ List.map BondsWith Idol.idols
     in
@@ -1231,9 +1500,9 @@ type GradAbility
     | Suitable_all_2
       -- | WeakMentality
       -- | StrongMentality
-      -- | MemoryGage_plusplus
-      -- | MemoryGage_plus
-      -- | MemoryGage_minus
+      -- | MemoryGauge_plusplus
+      -- | MemoryGauge_plus
+      -- | MemoryGauge_minus
       -- | Remove_melancholy_1
       -- | Remove_melancholy_2
       -- | Remove_relax_1
@@ -1253,11 +1522,11 @@ type GradAbility
     | Startdash
     | Favorite -- 人気者
     | Calm -- 物静か
-    | Spotlighted -- 注目の的
-    | Humble -- ひかえめ
+      -- | Spotlighted -- 注目の的
+      -- | Humble -- ひかえめ
     | Perfectly
-    | AppealUp_theMoreMemoryGage
-    | AppealUp_theLessMemoryGage
+    | AppealUp_theMoreMemoryGauge
+    | AppealUp_theLessMemoryGauge
     | BondsWith Idol.Idol
 
 
@@ -1288,19 +1557,17 @@ gradAbilityToString ability =
         Calm ->
             "物静か"
 
-        Spotlighted ->
-            "注目の的"
-
-        Humble ->
-            "ひかえめ"
-
+        -- Spotlighted ->
+        --     "注目の的"
+        -- Humble ->
+        --     "ひかえめ"
         Perfectly ->
             "パーフェクトリィ"
 
-        AppealUp_theMoreMemoryGage ->
+        AppealUp_theMoreMemoryGauge ->
             "アピールUP（思い出高）"
 
-        AppealUp_theLessMemoryGage ->
+        AppealUp_theLessMemoryGauge ->
             "アピールUP（思い出低）"
 
         BondsWith idol ->
