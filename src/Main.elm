@@ -559,8 +559,7 @@ calcGradPositionBonusPercentage position abilities =
 viewJudgeArea : Model -> Html Msg
 viewJudgeArea model =
     div [ class "container" ]
-        [ h2 [] [ text "アピール値" ]
-        , table [ class "table" ]
+        [ table [ class "table" ]
             [ thead []
                 [ tr []
                     [ th [] []
@@ -1079,7 +1078,7 @@ viewMemoryAppealPullDown memoryAppealCoefficient =
 viewFesUnitArea : Model -> Html Msg
 viewFesUnitArea model =
     div [ class "container" ]
-        [ h2 [] [ text "フェスユニットのステータス指定エリア" ]
+        [ h2 [] [ text "フェスユニットステータス" ]
         , table [ class "table" ]
             [ thead []
                 [ tr []
