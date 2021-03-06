@@ -5929,6 +5929,15 @@ var $author$project$Main$applyBonus = function (rawModel) {
 	var bonusedCenter = A2($author$project$Main$applyBonusToFesIdol, rawModel, $author$project$Main$Center);
 	return A8($author$project$Main$Model, bonusedLeader, bonusedVocalist, bonusedCenter, bonusedDancer, bonusedVisualist, rawModel.idolAppealParam, rawModel.buffs, rawModel.condition);
 };
+var $elm$json$Json$Encode$string = _Json_wrap;
+var $elm$html$Html$Attributes$stringProperty = F2(
+	function (key, string) {
+		return A2(
+			_VirtualDom_property,
+			key,
+			$elm$json$Json$Encode$string(string));
+	});
+var $elm$html$Html$Attributes$class = $elm$html$Html$Attributes$stringProperty('className');
 var $elm$html$Html$div = _VirtualDom_node('div');
 var $elm$html$Html$h1 = _VirtualDom_node('h1');
 var $elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
@@ -5999,14 +6008,6 @@ var $elm$html$Html$Attributes$boolProperty = F2(
 			$elm$json$Json$Encode$bool(bool));
 	});
 var $elm$html$Html$Attributes$selected = $elm$html$Html$Attributes$boolProperty('selected');
-var $elm$json$Json$Encode$string = _Json_wrap;
-var $elm$html$Html$Attributes$stringProperty = F2(
-	function (key, string) {
-		return A2(
-			_VirtualDom_property,
-			key,
-			$elm$json$Json$Encode$string(string));
-	});
 var $elm$html$Html$Attributes$value = $elm$html$Html$Attributes$stringProperty('value');
 var $author$project$Main$viewAppealCoefficientOption = F2(
 	function (selectedCoefficient, appealCoefficient) {
@@ -6271,7 +6272,10 @@ var $author$project$Main$viewMemoryAppeal = function (model) {
 var $author$project$Main$viewAppealArea = function (model) {
 	return A2(
 		$elm$html$Html$div,
-		_List_Nil,
+		_List_fromArray(
+			[
+				$elm$html$Html$Attributes$class('container')
+			]),
 		_List_fromArray(
 			[
 				A2(
@@ -6283,7 +6287,10 @@ var $author$project$Main$viewAppealArea = function (model) {
 					])),
 				A2(
 				$elm$html$Html$table,
-				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$Attributes$class('table')
+					]),
 				_List_fromArray(
 					[
 						A2(
@@ -6421,7 +6428,10 @@ var $author$project$Main$statusHeader = function (status) {
 var $author$project$Main$writeFesIdol = function (model) {
 	return A2(
 		$elm$html$Html$tr,
-		_List_Nil,
+		_List_fromArray(
+			[
+				$elm$html$Html$Attributes$class('table-info')
+			]),
 		_List_fromArray(
 			[
 				A2(
@@ -6510,9 +6520,22 @@ var $author$project$Main$getStatus = F2(
 	});
 var $author$project$Main$writeFesIdolStatus = F2(
 	function (model, status) {
+		var rowClass = function () {
+			switch (status.$) {
+				case 'Vocal':
+					return $elm$html$Html$Attributes$class('table-danger');
+				case 'Dance':
+					return $elm$html$Html$Attributes$class('table-primary');
+				case 'Visual':
+					return $elm$html$Html$Attributes$class('table-warning');
+				default:
+					return $elm$html$Html$Attributes$class('table-light');
+			}
+		}();
 		return A2(
 			$elm$html$Html$tr,
-			_List_Nil,
+			_List_fromArray(
+				[rowClass]),
 			_List_fromArray(
 				[
 					A2(
@@ -6568,7 +6591,10 @@ var $author$project$Main$writeFesIdolStatus = F2(
 var $author$project$Main$viewBonusedFesUnitArea = function (model) {
 	return A2(
 		$elm$html$Html$div,
-		_List_Nil,
+		_List_fromArray(
+			[
+				$elm$html$Html$Attributes$class('container')
+			]),
 		_List_fromArray(
 			[
 				A2(
@@ -6580,7 +6606,11 @@ var $author$project$Main$viewBonusedFesUnitArea = function (model) {
 					])),
 				A2(
 				$elm$html$Html$table,
-				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$Attributes$class('table'),
+						$elm$html$Html$Attributes$class('table-sm')
+					]),
 				_List_fromArray(
 					[
 						A2(
@@ -6593,13 +6623,7 @@ var $author$project$Main$viewBonusedFesUnitArea = function (model) {
 								_List_Nil,
 								_List_fromArray(
 									[
-										A2(
-										$elm$html$Html$th,
-										_List_Nil,
-										_List_fromArray(
-											[
-												$elm$html$Html$text('ポジション')
-											])),
+										A2($elm$html$Html$th, _List_Nil, _List_Nil),
 										A2(
 										$elm$html$Html$th,
 										_List_Nil,
@@ -7294,7 +7318,10 @@ var $author$project$Main$viewTurnSlider = function (model) {
 var $author$project$Main$viewBuffArea = function (model) {
 	return A2(
 		$elm$html$Html$div,
-		_List_Nil,
+		_List_fromArray(
+			[
+				$elm$html$Html$Attributes$class('container')
+			]),
 		_List_fromArray(
 			[
 				A2(
@@ -7313,7 +7340,10 @@ var $author$project$Main$viewBuffArea = function (model) {
 					])),
 				A2(
 				$elm$html$Html$table,
-				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$Attributes$class('table')
+					]),
 				_List_fromArray(
 					[
 						A2(
@@ -7392,7 +7422,11 @@ var $author$project$Main$viewBuffArea = function (model) {
 					])),
 				A2(
 				$elm$html$Html$table,
-				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$Attributes$class('table'),
+						$elm$html$Html$Attributes$class('table-sm')
+					]),
 				_List_fromArray(
 					[
 						A2(
@@ -7649,7 +7683,10 @@ var $author$project$Main$viewIdolPullDown = F2(
 var $author$project$Main$viewFesIdol = function (model) {
 	return A2(
 		$elm$html$Html$tr,
-		_List_Nil,
+		_List_fromArray(
+			[
+				$elm$html$Html$Attributes$class('table-info')
+			]),
 		_List_fromArray(
 			[
 				A2(
@@ -7820,9 +7857,22 @@ var $author$project$Main$viewFesIdolMemoryLevel = function (model) {
 };
 var $author$project$Main$viewFesIdolStatus = F2(
 	function (model, status) {
+		var rowClass = function () {
+			switch (status.$) {
+				case 'Vocal':
+					return $elm$html$Html$Attributes$class('table-danger');
+				case 'Dance':
+					return $elm$html$Html$Attributes$class('table-primary');
+				case 'Visual':
+					return $elm$html$Html$Attributes$class('table-warning');
+				default:
+					return $elm$html$Html$Attributes$class('table-light');
+			}
+		}();
 		return A2(
 			$elm$html$Html$tr,
-			_List_Nil,
+			_List_fromArray(
+				[rowClass]),
 			_List_fromArray(
 				[
 					A2(
@@ -8062,7 +8112,10 @@ var $author$project$Main$viewGradAbilities = function (model) {
 var $author$project$Main$viewFesUnitArea = function (model) {
 	return A2(
 		$elm$html$Html$div,
-		_List_Nil,
+		_List_fromArray(
+			[
+				$elm$html$Html$Attributes$class('container')
+			]),
 		_List_fromArray(
 			[
 				A2(
@@ -8074,7 +8127,10 @@ var $author$project$Main$viewFesUnitArea = function (model) {
 					])),
 				A2(
 				$elm$html$Html$table,
-				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$Attributes$class('table')
+					]),
 				_List_fromArray(
 					[
 						A2(
@@ -8087,13 +8143,7 @@ var $author$project$Main$viewFesUnitArea = function (model) {
 								_List_Nil,
 								_List_fromArray(
 									[
-										A2(
-										$elm$html$Html$th,
-										_List_Nil,
-										_List_fromArray(
-											[
-												$elm$html$Html$text('ポジション')
-											])),
+										A2($elm$html$Html$th, _List_Nil, _List_Nil),
 										A2(
 										$elm$html$Html$th,
 										_List_Nil,
@@ -8409,18 +8459,29 @@ var $author$project$Main$typeHeader = function (appealType) {
 };
 var $author$project$Main$viewJudge = F2(
 	function (judgeType, model) {
+		var cssClass = function () {
+			switch (judgeType.$) {
+				case 'Vo':
+					return $elm$html$Html$Attributes$class('table-danger');
+				case 'Da':
+					return $elm$html$Html$Attributes$class('table-primary');
+				default:
+					return $elm$html$Html$Attributes$class('table-warning');
+			}
+		}();
 		return A2(
 			$elm$html$Html$tr,
 			_List_Nil,
 			_List_fromArray(
 				[
 					A2(
-					$elm$html$Html$td,
-					_List_Nil,
+					$elm$html$Html$th,
+					_List_fromArray(
+						[cssClass]),
 					_List_fromArray(
 						[
 							$elm$html$Html$text(
-							$author$project$Main$typeHeader(judgeType))
+							$author$project$Main$typeHeader(judgeType) + '審査員')
 						])),
 					A2(
 					$elm$html$Html$td,
@@ -8463,7 +8524,10 @@ var $author$project$Main$viewJudge = F2(
 var $author$project$Main$viewJudgeArea = function (model) {
 	return A2(
 		$elm$html$Html$div,
-		_List_Nil,
+		_List_fromArray(
+			[
+				$elm$html$Html$Attributes$class('container')
+			]),
 		_List_fromArray(
 			[
 				A2(
@@ -8475,7 +8539,10 @@ var $author$project$Main$viewJudgeArea = function (model) {
 					])),
 				A2(
 				$elm$html$Html$table,
-				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$Attributes$class('table')
+					]),
 				_List_fromArray(
 					[
 						A2(
@@ -8488,37 +8555,43 @@ var $author$project$Main$viewJudgeArea = function (model) {
 								_List_Nil,
 								_List_fromArray(
 									[
+										A2($elm$html$Html$th, _List_Nil, _List_Nil),
 										A2(
 										$elm$html$Html$th,
-										_List_Nil,
 										_List_fromArray(
 											[
-												$elm$html$Html$text('審査員タイプ')
-											])),
-										A2(
-										$elm$html$Html$th,
-										_List_Nil,
+												$elm$html$Html$Attributes$class('table-danger')
+											]),
 										_List_fromArray(
 											[
 												$elm$html$Html$text('Voアピール')
 											])),
 										A2(
 										$elm$html$Html$th,
-										_List_Nil,
+										_List_fromArray(
+											[
+												$elm$html$Html$Attributes$class('table-primary')
+											]),
 										_List_fromArray(
 											[
 												$elm$html$Html$text('Daアピール')
 											])),
 										A2(
 										$elm$html$Html$th,
-										_List_Nil,
+										_List_fromArray(
+											[
+												$elm$html$Html$Attributes$class('table-warning')
+											]),
 										_List_fromArray(
 											[
 												$elm$html$Html$text('Viアピール')
 											])),
 										A2(
 										$elm$html$Html$th,
-										_List_Nil,
+										_List_fromArray(
+											[
+												$elm$html$Html$Attributes$class('table-info')
+											]),
 										_List_fromArray(
 											[
 												$elm$html$Html$text('思い出アピール')
@@ -8546,7 +8619,10 @@ var $author$project$Main$view = function (model) {
 			[
 				A2(
 				$elm$html$Html$div,
-				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$Attributes$class('container')
+					]),
 				_List_fromArray(
 					[
 						A2(
@@ -8559,7 +8635,10 @@ var $author$project$Main$view = function (model) {
 					])),
 				A2(
 				$elm$html$Html$div,
-				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$Attributes$class('container')
+					]),
 				_List_fromArray(
 					[
 						$author$project$Main$viewJudgeArea(bonusAppliedModel),
