@@ -832,7 +832,7 @@ viewBuffArea model =
             [ li [ class "list-group-item col-sm" ] [ text "思い出ゲージ" ]
             , li [ class "list-group-item col-sm" ] [ viewMemoryGaugeSlider model ]
             ]
-        , table [ class "table", class "table-sm" ]
+        , table [ class "table table-sm" ]
             [ thead []
                 [ tr []
                     [ th [] [ text "アビリティ" ]
