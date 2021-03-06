@@ -358,7 +358,6 @@ view model =
         , div [ class "container" ]
             [ viewJudgeArea bonusAppliedModel
             , viewBuffArea model
-            , viewBonusedFesUnitArea bonusAppliedModel
             , viewFesUnitArea model
             ]
         ]
@@ -1062,12 +1061,6 @@ viewAppealPower appealType model =
         ]
 
 
-viewMemoryAppeal : Model -> Html Msg
-viewMemoryAppeal model =
-    div []
-        [ viewMemoryAppealPullDown model.idolAppealParam.memoryCoefficient ]
-
-
 viewMemoryAppealPullDown : Float -> Html Msg
 viewMemoryAppealPullDown memoryAppealCoefficient =
     select
@@ -1082,35 +1075,6 @@ viewMemoryAppealPullDown memoryAppealCoefficient =
 {-
    viewBonusedFesUnitArea : ボーナス適用後のステータスを表示するエリア
 -}
-
-
-viewBonusedFesUnitArea : Model -> Html Msg
-viewBonusedFesUnitArea model =
-    div [ class "container" ]
-        [ h2 [] [ text "ボーナス適用後のステータス" ]
-        , table [ class "table", class "table-sm" ]
-            [ thead []
-                [ tr []
-                    [ th [] []
-                    , th [] [ text "Leader" ]
-                    , th [] [ text "Vocal担当" ]
-                    , th [] [ text "Center" ]
-                    , th [] [ text "Dance担当" ]
-                    , th [] [ text "Visual担当" ]
-                    ]
-                ]
-            , tbody []
-                [ writeFesIdol model
-                , writeFesIdolStatus model Vocal
-                , writeFesIdolStatus model Dance
-                , writeFesIdolStatus model Visual
-                , writeFesIdolStatus model Mental
-                ]
-            ]
-        ]
-
-
-
 {-
    viewFesUnitArea : フェスユニット編成、ステータス設定を行うエリア
 -}
@@ -1160,41 +1124,37 @@ viewFesIdolStatus model status =
 
                 _ ->
                     class "table-light"
+
+        bonusAppliedModel =
+            applyBonus model
     in
     tr [ rowClass ]
         [ th [] [ text (statusHeader status) ]
-        , td [] [ input [ style "width" "4em", value (getStatus (getFesIdol model Leader) status), onInput (ChangeFesIdolStatus Leader status) ] [] ]
-        , td [] [ input [ style "width" "4em", value (getStatus (getFesIdol model Vocalist) status), onInput (ChangeFesIdolStatus Vocalist status) ] [] ]
-        , td [] [ input [ style "width" "4em", value (getStatus (getFesIdol model Center) status), onInput (ChangeFesIdolStatus Center status) ] [] ]
-        , td [] [ input [ style "width" "4em", value (getStatus (getFesIdol model Dancer) status), onInput (ChangeFesIdolStatus Dancer status) ] [] ]
-        , td [] [ input [ style "width" "4em", value (getStatus (getFesIdol model Visualist) status), onInput (ChangeFesIdolStatus Visualist status) ] [] ]
-        ]
-
-
-writeFesIdolStatus : Model -> FesIdolStatus -> Html msg
-writeFesIdolStatus model status =
-    let
-        rowClass =
-            case status of
-                Vocal ->
-                    class "table-danger"
-
-                Dance ->
-                    class "table-primary"
-
-                Visual ->
-                    class "table-warning"
-
-                _ ->
-                    class "table-light"
-    in
-    tr [ rowClass ]
-        [ td [] [ text (statusHeader status) ]
-        , td [] [ text (getStatus model.leader status) ]
-        , td [] [ text (getStatus model.vocalist status) ]
-        , td [] [ text (getStatus model.center status) ]
-        , td [] [ text (getStatus model.dancer status) ]
-        , td [] [ text (getStatus model.visualist status) ]
+        , td [ class "fw-bold" ]
+            [ input [ style "width" "4em", value (getStatus (getFesIdol model Leader) status), onInput (ChangeFesIdolStatus Leader status) ] []
+            , text " → "
+            , text (getStatus bonusAppliedModel.leader status)
+            ]
+        , td [ class "fw-bold" ]
+            [ input [ style "width" "4em", value (getStatus (getFesIdol model Vocalist) status), onInput (ChangeFesIdolStatus Vocalist status) ] []
+            , text " → "
+            , text (getStatus bonusAppliedModel.vocalist status)
+            ]
+        , td [ class "fw-bold" ]
+            [ input [ style "width" "4em", value (getStatus (getFesIdol model Center) status), onInput (ChangeFesIdolStatus Center status) ] []
+            , text " → "
+            , text (getStatus bonusAppliedModel.center status)
+            ]
+        , td [ class "fw-bold" ]
+            [ input [ style "width" "4em", value (getStatus (getFesIdol model Dancer) status), onInput (ChangeFesIdolStatus Dancer status) ] []
+            , text " → "
+            , text (getStatus bonusAppliedModel.dancer status)
+            ]
+        , td [ class "fw-bold" ]
+            [ input [ style "width" "4em", value (getStatus (getFesIdol model Visualist) status), onInput (ChangeFesIdolStatus Visualist status) ] []
+            , text " → "
+            , text (getStatus bonusAppliedModel.visualist status)
+            ]
         ]
 
 
@@ -1282,18 +1242,6 @@ viewFesIdol model =
         , td [] [ viewIdolPullDown (getFesIdol model Center) Center ]
         , td [] [ viewIdolPullDown (getFesIdol model Dancer) Dancer ]
         , td [] [ viewIdolPullDown (getFesIdol model Visualist) Visualist ]
-        ]
-
-
-writeFesIdol : Model -> Html Msg
-writeFesIdol model =
-    tr [ class "table-info" ]
-        [ th [] [ text (statusHeader Idol) ]
-        , td [] [ text (Idol.toString model.leader.idol) ]
-        , td [] [ text (Idol.toString model.vocalist.idol) ]
-        , td [] [ text (Idol.toString model.center.idol) ]
-        , td [] [ text (Idol.toString model.dancer.idol) ]
-        , td [] [ text (Idol.toString model.visualist.idol) ]
         ]
 
 
