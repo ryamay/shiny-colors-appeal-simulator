@@ -438,10 +438,10 @@ applyBonusToFesIdol rawModel unitPosition =
     in
     FesIdol
         targetIdol.idol
-        (((targetIdol.vocal |> Basics.toFloat) * (1.0 + (totalBonus.vocal |> Basics.toFloat) * 0.01)) |> Basics.ceiling)
-        (((targetIdol.dance |> Basics.toFloat) * (1.0 + (totalBonus.dance |> Basics.toFloat) * 0.01)) |> Basics.ceiling)
-        (((targetIdol.visual |> Basics.toFloat) * (1.0 + (totalBonus.visual |> Basics.toFloat) * 0.01)) |> Basics.ceiling)
-        (((targetIdol.mental |> Basics.toFloat) * (1.0 + (totalBonus.mental |> Basics.toFloat) * 0.01)) |> Basics.ceiling)
+        (((targetIdol.vocal |> Basics.toFloat) * (1.0 + (totalBonus.vocal |> Basics.toFloat) * 0.01)) |> Round.roundNum 6 |> Basics.ceiling)
+        (((targetIdol.dance |> Basics.toFloat) * (1.0 + (totalBonus.dance |> Basics.toFloat) * 0.01)) |> Round.roundNum 6 |> Basics.ceiling)
+        (((targetIdol.visual |> Basics.toFloat) * (1.0 + (totalBonus.visual |> Basics.toFloat) * 0.01)) |> Round.roundNum 6 |> Basics.ceiling)
+        (((targetIdol.mental |> Basics.toFloat) * (1.0 + (totalBonus.mental |> Basics.toFloat) * 0.01)) |> Round.roundNum 6 |> Basics.ceiling)
         targetIdol.memoryLevel
         targetIdol.gradAbilities
 
