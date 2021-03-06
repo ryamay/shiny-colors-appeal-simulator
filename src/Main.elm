@@ -358,7 +358,6 @@ view model =
         , div [ class "container" ]
             [ viewJudgeArea bonusAppliedModel
             , viewBuffArea model
-            , viewAppealArea model
             , viewBonusedFesUnitArea bonusAppliedModel
             , viewFesUnitArea model
             ]
@@ -558,7 +557,7 @@ calcGradPositionBonusPercentage position abilities =
                 ]
 
 
-viewJudgeArea : Model -> Html msg
+viewJudgeArea : Model -> Html Msg
 viewJudgeArea model =
     div [ class "container" ]
         [ h2 [] [ text "アピール値" ]
@@ -569,7 +568,23 @@ viewJudgeArea model =
                     , th [ class "table-danger" ] [ text "Voアピール" ]
                     , th [ class "table-primary" ] [ text "Daアピール" ]
                     , th [ class "table-warning" ] [ text "Viアピール" ]
-                    , th [ class "table-info" ] [ text "思い出アピール" ]
+                    , th [ class "table-info" ]
+                        [ text "思い出アピール"
+                        ]
+                    ]
+                , tr []
+                    [ th [] []
+                    , th [ class "table-danger" ] [ viewAppealPower Vo model ]
+                    , th [ class "table-primary" ] [ viewAppealPower Da model ]
+                    , th [ class "table-warning" ] [ viewAppealPower Vi model ]
+                    , th [ class "table-info" ] [ viewMemoryAppealPullDown model.idolAppealParam.memoryCoefficient ]
+                    ]
+                , tr []
+                    [ th [] [ text "バフ合計" ]
+                    , th [ class "table-danger" ] [ viewBuffSlider Vo model ]
+                    , th [ class "table-primary" ] [ viewBuffSlider Da model ]
+                    , th [ class "table-warning" ] [ viewBuffSlider Vi model ]
+                    , th [ class "table-info" ] []
                     ]
                 ]
             , tbody []
@@ -577,6 +592,10 @@ viewJudgeArea model =
                 , viewJudge Da model
                 , viewJudge Vi model
                 ]
+            ]
+        , ul [ class "list-group list-group-horizontal row" ]
+            [ li [ class "list-group-item col-sm" ] [ text "アピールアイドル:", viewAppealIdolPulldown model ]
+            , li [ class "list-group-item col-sm" ] [ text "係数:", viewAppealCoefficient model ]
             ]
         ]
 
@@ -807,23 +826,6 @@ viewBuffArea : Model -> Html Msg
 viewBuffArea model =
     div [ class "container" ]
         [ h2 [] [ text "バフエリア" ]
-        , h3 [] [ text "各ステータスバフ（アクティブ・パッシブ）" ]
-        , table [ class "table" ]
-            [ thead []
-                [ tr []
-                    [ th [] [ text "Vocalバフ" ]
-                    , th [] [ text "Danceバフ" ]
-                    , th [] [ text "Visualバフ" ]
-                    ]
-                ]
-            , tbody []
-                [ tr []
-                    [ td [] [ viewBuffSlider Vo model ]
-                    , td [] [ viewBuffSlider Da model ]
-                    , td [] [ viewBuffSlider Vi model ]
-                    ]
-                ]
-            ]
         , h3 [] [ text "G.R.A.D.バフ" ]
         , table [ class "table", class "table-sm" ]
             [ thead []
@@ -1015,35 +1017,6 @@ getBuff buffs appealType =
 -}
 
 
-viewAppealArea : Model -> Html Msg
-viewAppealArea model =
-    div [ class "container" ]
-        [ h2 [] [ text "アピール倍率指定エリア" ]
-        , table [ class "table" ]
-            [ thead []
-                [ tr []
-                    [ th [] [ text "アピールするアイドル" ]
-                    , th [] [ text "アピール係数" ]
-                    , th [] [ text "Vo倍率" ]
-                    , th [] [ text "Da倍率" ]
-                    , th [] [ text "Vi倍率" ]
-                    , th [] [ text "思い出アピール" ]
-                    ]
-                ]
-            , tbody []
-                [ tr []
-                    [ td [] [ viewAppealIdolPulldown model ]
-                    , td [] [ viewAppealCoefficient model ]
-                    , td [] [ viewAppealPower Vo model ]
-                    , td [] [ viewAppealPower Da model ]
-                    , td [] [ viewAppealPower Vi model ]
-                    , td [] [ viewMemoryAppeal model ]
-                    ]
-                ]
-            ]
-        ]
-
-
 viewAppealIdolPulldown : Model -> Html Msg
 viewAppealIdolPulldown model =
     -- フェスユニットのアイドルを選択肢に表示するプルダウンを表示
@@ -1085,6 +1058,7 @@ viewAppealPower appealType model =
             ]
             []
         , input [ style "width" "4em", value (appealPower model appealType |> String.fromFloat), onInput (ChangeAppealPower appealType) ] []
+        , text "倍"
         ]
 
 
@@ -1188,7 +1162,7 @@ viewFesIdolStatus model status =
                     class "table-light"
     in
     tr [ rowClass ]
-        [ td [] [ text (statusHeader status) ]
+        [ th [] [ text (statusHeader status) ]
         , td [] [ input [ style "width" "4em", value (getStatus (getFesIdol model Leader) status), onInput (ChangeFesIdolStatus Leader status) ] [] ]
         , td [] [ input [ style "width" "4em", value (getStatus (getFesIdol model Vocalist) status), onInput (ChangeFesIdolStatus Vocalist status) ] [] ]
         , td [] [ input [ style "width" "4em", value (getStatus (getFesIdol model Center) status), onInput (ChangeFesIdolStatus Center status) ] [] ]
@@ -1227,7 +1201,7 @@ writeFesIdolStatus model status =
 viewFesIdolMemoryLevel : Model -> Html Msg
 viewFesIdolMemoryLevel model =
     tr []
-        [ td [] [ text (statusHeader MemoryLevel) ]
+        [ th [] [ text (statusHeader MemoryLevel) ]
         , td [] [ viewMemoryLevelPullDown (getFesIdol model Leader) Leader ]
         , td [] [ viewMemoryLevelPullDown (getFesIdol model Vocalist) Vocalist ]
         , td [] [ viewMemoryLevelPullDown (getFesIdol model Center) Center ]
@@ -1259,7 +1233,7 @@ viewMemoryLevelOption selectedLevel memoryLevel =
 viewGradAbilities : Model -> Html Msg
 viewGradAbilities model =
     tr []
-        [ td [] [ text "G.R.A.D.アビリティ" ]
+        [ th [] [ text "G.R.A.D.アビリティ" ]
         , td [] [ viewGradAbilitiesOf Leader model.leader.gradAbilities ]
         , td [] [ viewGradAbilitiesOf Vocalist model.vocalist.gradAbilities ]
         , td [] [ viewGradAbilitiesOf Center model.center.gradAbilities ]
@@ -1302,7 +1276,7 @@ viewAbility position selectedAbilities abilityType =
 viewFesIdol : Model -> Html Msg
 viewFesIdol model =
     tr [ class "table-info" ]
-        [ td [] [ text (statusHeader Idol) ]
+        [ th [] [ text (statusHeader Idol) ]
         , td [] [ viewIdolPullDown (getFesIdol model Leader) Leader ]
         , td [] [ viewIdolPullDown (getFesIdol model Vocalist) Vocalist ]
         , td [] [ viewIdolPullDown (getFesIdol model Center) Center ]
@@ -1314,7 +1288,7 @@ viewFesIdol model =
 writeFesIdol : Model -> Html Msg
 writeFesIdol model =
     tr [ class "table-info" ]
-        [ td [] [ text (statusHeader Idol) ]
+        [ th [] [ text (statusHeader Idol) ]
         , td [] [ text (Idol.toString model.leader.idol) ]
         , td [] [ text (Idol.toString model.vocalist.idol) ]
         , td [] [ text (Idol.toString model.center.idol) ]
