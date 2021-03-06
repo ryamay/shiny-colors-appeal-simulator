@@ -918,12 +918,6 @@ calcGradAbiiltyBuff ability condition =
 
 viewBondsArea : Model -> List (Html msg)
 viewBondsArea model =
-    let
-        bondsCount =
-            List.map BondsWith [ model.leader.idol, model.vocalist.idol, model.center.idol, model.dancer.idol, model.visualist.idol ]
-                |> List.map (countAbility model)
-                |> List.sum
-    in
     [ viewBondsBuffRow model model.leader.idol
     , viewBondsBuffRow model model.vocalist.idol
     , viewBondsBuffRow model model.center.idol
@@ -1079,7 +1073,7 @@ viewFesUnitArea : Model -> Html Msg
 viewFesUnitArea model =
     div [ class "container" ]
         [ h2 [] [ text "フェスユニットステータス" ]
-        , table [ class "table" ]
+        , table [ class "table table-sm" ]
             [ thead []
                 [ tr []
                     [ th [] []
