@@ -593,8 +593,8 @@ viewJudgeArea model =
                 ]
             ]
         , ul [ class "list-group list-group-horizontal row" ]
-            [ li [ class "list-group-item col-sm" ] [ text "アピールアイドル:", viewAppealIdolPulldown model ]
-            , li [ class "list-group-item col-sm" ] [ text "係数:", viewAppealCoefficient model ]
+            [ li [ class "list-group-item col-sm" ] [ text "アピールアイドル : ", viewAppealIdolPulldown model ]
+            , li [ class "list-group-item col-sm" ] [ text "係数 : ", viewAppealCoefficient model ]
             ]
         ]
 
@@ -824,14 +824,20 @@ calcGradBuff model =
 viewBuffArea : Model -> Html Msg
 viewBuffArea model =
     div [ class "container" ]
-        [ h2 [] [ text "バフエリア" ]
-        , h3 [] [ text "G.R.A.D.バフ" ]
+        [ h2 [] [ text "G.R.A.D.バフ" ]
+        , ul [ class "list-group list-group-horizontal row" ]
+            [ li [ class "list-group-item col-sm" ] [ text "経過ターン数" ]
+            , li [ class "list-group-item col-sm" ] [ viewTurnSlider model ]
+            ]
+        , ul [ class "list-group list-group-horizontal row" ]
+            [ li [ class "list-group-item col-sm" ] [ text "思い出ゲージ" ]
+            , li [ class "list-group-item col-sm" ] [ viewMemoryGaugeSlider model ]
+            ]
         , table [ class "table", class "table-sm" ]
             [ thead []
                 [ tr []
                     [ th [] [ text "アビリティ" ]
                     , th [] [ text "所持数" ]
-                    , th [ colspan 2 ] [ text "パラメータ" ]
                     , th [] [ text "バフ合計" ]
                     ]
                 ]
@@ -839,8 +845,6 @@ viewBuffArea model =
                 ([ tr []
                     [ td [] [ text (gradAbilityToString Startdash) ]
                     , td [] [ text (countAbility model Startdash |> String.fromInt) ]
-                    , td [ rowspan 2 ] [ text "経過ターン数" ]
-                    , td [ rowspan 2 ] [ viewTurnSlider model ]
                     , td [] [ text (((calcGradAbiiltyBuff Startdash model.condition * Basics.toFloat (countAbility model Startdash)) |> Round.round 1) ++ "%") ]
                     ]
                  , tr []
@@ -851,8 +855,6 @@ viewBuffArea model =
                  , tr []
                     [ td [] [ text (gradAbilityToString AppealUp_theMoreMemoryGauge) ]
                     , td [] [ text (countAbility model AppealUp_theMoreMemoryGauge |> String.fromInt) ]
-                    , td [ rowspan 2 ] [ text "思い出ゲージ" ]
-                    , td [ rowspan 2 ] [ viewMemoryGaugeSlider model ]
                     , td [] [ text (((calcGradAbiiltyBuff AppealUp_theMoreMemoryGauge model.condition * Basics.toFloat (countAbility model AppealUp_theMoreMemoryGauge)) |> Round.round 1) ++ "%") ]
                     ]
                  , tr []
@@ -923,27 +925,21 @@ viewBondsArea model =
                 |> List.map (countAbility model)
                 |> List.sum
     in
-    [ tr []
-        [ td [] [ text (Idol.toFullName model.leader.idol ++ "との絆") ]
-        , td [ rowspan 5, colspan 3 ]
-            [ text (String.fromInt bondsCount)
-            ]
-        , td [ rowspan 5 ]
-            [ text (((bondsCount * 5) |> Basics.toFloat |> Round.round 1) ++ "%") ]
-        ]
-    , tr []
-        [ td [ colspan 4 ] [ text (Idol.toFullName model.vocalist.idol ++ "との絆") ]
-        ]
-    , tr []
-        [ td [ colspan 4 ] [ text (Idol.toFullName model.center.idol ++ "との絆") ]
-        ]
-    , tr []
-        [ td [ colspan 4 ] [ text (Idol.toFullName model.dancer.idol ++ "との絆") ]
-        ]
-    , tr []
-        [ td [ colspan 4 ] [ text (Idol.toFullName model.visualist.idol ++ "との絆") ]
-        ]
+    [ viewBondsBuffRow model model.leader.idol
+    , viewBondsBuffRow model model.vocalist.idol
+    , viewBondsBuffRow model model.center.idol
+    , viewBondsBuffRow model model.dancer.idol
+    , viewBondsBuffRow model model.visualist.idol
     ]
+
+
+viewBondsBuffRow : Model -> Idol.Idol -> Html msg
+viewBondsBuffRow model idol =
+    tr []
+        [ td [] [ text (Idol.toFullName idol ++ "との絆") ]
+        , td [] [ text (String.fromInt (countAbility model (BondsWith idol))) ]
+        , td [] [ text (((countAbility model (BondsWith idol) * 5) |> Basics.toFloat |> Round.round 1) ++ "%") ]
+        ]
 
 
 viewTurnSlider : Model -> Html Msg
