@@ -2,7 +2,7 @@ module Main exposing (Buffs, MemoryLevel, Model, getStatus, main, update, viewId
 
 import Browser
 import Html exposing (..)
-import Html.Attributes exposing (checked, colspan, max, min, rowspan, selected, step, style, type_, value)
+import Html.Attributes exposing (checked, class, colspan, max, min, rowspan, selected, step, style, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Html.Events.Extra as Events
 import Html.Extra as Html
@@ -352,10 +352,10 @@ view model =
             applyBonus model
     in
     div []
-        [ div []
+        [ div [ class "container" ]
             [ h1 [] [ text "フェスアピール値シミュレータ" ]
             ]
-        , div []
+        , div [ class "container" ]
             [ viewJudgeArea bonusAppliedModel
             , viewBuffArea model
             , viewAppealArea model
@@ -560,16 +560,16 @@ calcGradPositionBonusPercentage position abilities =
 
 viewJudgeArea : Model -> Html msg
 viewJudgeArea model =
-    div []
+    div [ class "container" ]
         [ h2 [] [ text "アピール値" ]
-        , table []
+        , table [ class "table" ]
             [ thead []
                 [ tr []
-                    [ th [] [ text "審査員タイプ" ]
-                    , th [] [ text "Voアピール" ]
-                    , th [] [ text "Daアピール" ]
-                    , th [] [ text "Viアピール" ]
-                    , th [] [ text "思い出アピール" ]
+                    [ th [] []
+                    , th [ class "table-danger" ] [ text "Voアピール" ]
+                    , th [ class "table-primary" ] [ text "Daアピール" ]
+                    , th [ class "table-warning" ] [ text "Viアピール" ]
+                    , th [ class "table-info" ] [ text "思い出アピール" ]
                     ]
                 ]
             , tbody []
@@ -589,8 +589,20 @@ viewJudgeArea model =
 
 viewJudge : AppealType -> Model -> Html msg
 viewJudge judgeType model =
+    let
+        cssClass =
+            case judgeType of
+                Vo ->
+                    class "table-danger"
+
+                Da ->
+                    class "table-primary"
+
+                Vi ->
+                    class "table-warning"
+    in
     tr []
-        [ td [] [ text (typeHeader judgeType) ]
+        [ th [ cssClass ] [ text (typeHeader judgeType ++ "審査員") ]
         , td [] [ text (String.fromInt (calcNormalAppeal model Vo judgeType)) ]
         , td [] [ text (String.fromInt (calcNormalAppeal model Da judgeType)) ]
         , td [] [ text (String.fromInt (calcNormalAppeal model Vi judgeType)) ]
@@ -793,10 +805,10 @@ calcGradBuff model =
 
 viewBuffArea : Model -> Html Msg
 viewBuffArea model =
-    div []
+    div [ class "container" ]
         [ h2 [] [ text "バフエリア" ]
         , h3 [] [ text "各ステータスバフ（アクティブ・パッシブ）" ]
-        , table []
+        , table [ class "table" ]
             [ thead []
                 [ tr []
                     [ th [] [ text "Vocalバフ" ]
@@ -813,7 +825,7 @@ viewBuffArea model =
                 ]
             ]
         , h3 [] [ text "G.R.A.D.バフ" ]
-        , table []
+        , table [ class "table", class "table-sm" ]
             [ thead []
                 [ tr []
                     [ th [] [ text "アビリティ" ]
@@ -1005,9 +1017,9 @@ getBuff buffs appealType =
 
 viewAppealArea : Model -> Html Msg
 viewAppealArea model =
-    div []
+    div [ class "container" ]
         [ h2 [] [ text "アピール倍率指定エリア" ]
-        , table []
+        , table [ class "table" ]
             [ thead []
                 [ tr []
                     [ th [] [ text "アピールするアイドル" ]
@@ -1100,12 +1112,12 @@ viewMemoryAppealPullDown memoryAppealCoefficient =
 
 viewBonusedFesUnitArea : Model -> Html Msg
 viewBonusedFesUnitArea model =
-    div []
+    div [ class "container" ]
         [ h2 [] [ text "ボーナス適用後のステータス" ]
-        , table []
+        , table [ class "table", class "table-sm" ]
             [ thead []
                 [ tr []
-                    [ th [] [ text "ポジション" ]
+                    [ th [] []
                     , th [] [ text "Leader" ]
                     , th [] [ text "Vocal担当" ]
                     , th [] [ text "Center" ]
@@ -1132,13 +1144,12 @@ viewBonusedFesUnitArea model =
 
 viewFesUnitArea : Model -> Html Msg
 viewFesUnitArea model =
-    div
-        []
+    div [ class "container" ]
         [ h2 [] [ text "フェスユニットのステータス指定エリア" ]
-        , table []
+        , table [ class "table" ]
             [ thead []
                 [ tr []
-                    [ th [] [ text "ポジション" ]
+                    [ th [] []
                     , th [] [ text "Leader" ]
                     , th [] [ text "Vocal担当" ]
                     , th [] [ text "Center" ]
@@ -1161,7 +1172,22 @@ viewFesUnitArea model =
 
 viewFesIdolStatus : Model -> FesIdolStatus -> Html Msg
 viewFesIdolStatus model status =
-    tr []
+    let
+        rowClass =
+            case status of
+                Vocal ->
+                    class "table-danger"
+
+                Dance ->
+                    class "table-primary"
+
+                Visual ->
+                    class "table-warning"
+
+                _ ->
+                    class "table-light"
+    in
+    tr [ rowClass ]
         [ td [] [ text (statusHeader status) ]
         , td [] [ input [ style "width" "4em", value (getStatus (getFesIdol model Leader) status), onInput (ChangeFesIdolStatus Leader status) ] [] ]
         , td [] [ input [ style "width" "4em", value (getStatus (getFesIdol model Vocalist) status), onInput (ChangeFesIdolStatus Vocalist status) ] [] ]
@@ -1173,7 +1199,22 @@ viewFesIdolStatus model status =
 
 writeFesIdolStatus : Model -> FesIdolStatus -> Html msg
 writeFesIdolStatus model status =
-    tr []
+    let
+        rowClass =
+            case status of
+                Vocal ->
+                    class "table-danger"
+
+                Dance ->
+                    class "table-primary"
+
+                Visual ->
+                    class "table-warning"
+
+                _ ->
+                    class "table-light"
+    in
+    tr [ rowClass ]
         [ td [] [ text (statusHeader status) ]
         , td [] [ text (getStatus model.leader status) ]
         , td [] [ text (getStatus model.vocalist status) ]
@@ -1260,7 +1301,7 @@ viewAbility position selectedAbilities abilityType =
 
 viewFesIdol : Model -> Html Msg
 viewFesIdol model =
-    tr []
+    tr [ class "table-info" ]
         [ td [] [ text (statusHeader Idol) ]
         , td [] [ viewIdolPullDown (getFesIdol model Leader) Leader ]
         , td [] [ viewIdolPullDown (getFesIdol model Vocalist) Vocalist ]
@@ -1272,7 +1313,7 @@ viewFesIdol model =
 
 writeFesIdol : Model -> Html Msg
 writeFesIdol model =
-    tr []
+    tr [ class "table-info" ]
         [ td [] [ text (statusHeader Idol) ]
         , td [] [ text (Idol.toString model.leader.idol) ]
         , td [] [ text (Idol.toString model.vocalist.idol) ]
