@@ -1,0 +1,25 @@
+// Custom.scss
+
+// Required
+@import '../node_modules/bootstrap/scss/functions';
+@import '../node_modules/bootstrap/scss/variables';
+@import '../node_modules/bootstrap/scss/mixins';
+
+//Optional
+@import '../node_modules/bootstrap/scss/tables';
+
+$vocal: #fa61d8;
+$dance: #67bfff;
+$visual: #ffc918;
+$mental: #bf6bf1;
+
+$custom-table-variants: (
+  'vocal': shift-color($vocal, $table-bg-scale),
+  'dance': shift-color($dance, $table-bg-scale),
+  'visual': shift-color($visual, $table-bg-scale),
+  'mental': shift-color($mental, $table-bg-scale),
+);
+
+@each $color, $value in $custom-table-variants {
+  @include table-variant($color, $value);
+}

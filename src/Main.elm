@@ -2,7 +2,7 @@ module Main exposing (Buffs, MemoryLevel, Model, getStatus, main, update, viewId
 
 import Browser
 import Html exposing (..)
-import Html.Attributes exposing (checked, class, colspan, max, min, rowspan, selected, step, style, type_, value)
+import Html.Attributes exposing (checked, class, selected, step, style, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Html.Events.Extra as Events
 import Html.Extra as Html
@@ -358,8 +358,6 @@ view model =
         , div [ class "container" ]
             [ viewJudgeArea bonusAppliedModel
             , viewBuffArea model
-            , viewAppealArea model
-            , viewBonusedFesUnitArea bonusAppliedModel
             , viewFesUnitArea model
             ]
         ]
@@ -558,18 +556,33 @@ calcGradPositionBonusPercentage position abilities =
                 ]
 
 
-viewJudgeArea : Model -> Html msg
+viewJudgeArea : Model -> Html Msg
 viewJudgeArea model =
     div [ class "container" ]
-        [ h2 [] [ text "アピール値" ]
-        , table [ class "table" ]
+        [ table [ class "table" ]
             [ thead []
                 [ tr []
                     [ th [] []
-                    , th [ class "table-danger" ] [ text "Voアピール" ]
-                    , th [ class "table-primary" ] [ text "Daアピール" ]
-                    , th [ class "table-warning" ] [ text "Viアピール" ]
-                    , th [ class "table-info" ] [ text "思い出アピール" ]
+                    , th [ class "table-vocal" ] [ text "Voアピール" ]
+                    , th [ class "table-dance" ] [ text "Daアピール" ]
+                    , th [ class "table-visual" ] [ text "Viアピール" ]
+                    , th [ class "table-info" ]
+                        [ text "思い出アピール"
+                        ]
+                    ]
+                , tr []
+                    [ th [] []
+                    , th [ class "table-vocal" ] [ viewAppealPower Vo model ]
+                    , th [ class "table-dance" ] [ viewAppealPower Da model ]
+                    , th [ class "table-visual" ] [ viewAppealPower Vi model ]
+                    , th [ class "table-info" ] [ viewMemoryAppealPullDown model.idolAppealParam.memoryCoefficient ]
+                    ]
+                , tr []
+                    [ th [] [ text "バフ合計" ]
+                    , th [ class "table-vocal" ] [ viewBuffSlider Vo model ]
+                    , th [ class "table-dance" ] [ viewBuffSlider Da model ]
+                    , th [ class "table-visual" ] [ viewBuffSlider Vi model ]
+                    , th [ class "table-info" ] []
                     ]
                 ]
             , tbody []
@@ -578,6 +591,15 @@ viewJudgeArea model =
                 , viewJudge Vi model
                 ]
             ]
+        , ul [ class "list-group list-group-horizontal row" ]
+            [ li [ class "list-group-item col-sm" ] [ text "アピールアイドル : ", viewAppealIdolPulldown model ]
+            , li [ class "list-group-item col-sm" ] [ text "係数 : ", viewAppealCoefficient model ]
+            ]
+        , strong [] [ text ("合計G.R.A.D.バフ : " ++ (calcGradBuff model |> Round.round 1) ++ " %") ]
+        , ul [ class "list-group list-group-horizontal row" ]
+            [ li [ class "list-group-item col-sm" ] [ text "経過ターン数 : ", viewTurnSlider model, viewTurnInput model, text "ターン目" ] ]
+        , ul [ class "list-group list-group-horizontal row" ]
+            [ li [ class "list-group-item col-sm" ] [ text "思い出ゲージ : ", viewMemoryGaugeSlider model, viewMemoryGaugeInput model, text "%" ] ]
         ]
 
 
@@ -593,13 +615,13 @@ viewJudge judgeType model =
         cssClass =
             case judgeType of
                 Vo ->
-                    class "table-danger"
+                    class "table-vocal"
 
                 Da ->
-                    class "table-primary"
+                    class "table-dance"
 
                 Vi ->
-                    class "table-warning"
+                    class "table-visual"
     in
     tr []
         [ th [ cssClass ] [ text (typeHeader judgeType ++ "審査員") ]
@@ -806,31 +828,12 @@ calcGradBuff model =
 viewBuffArea : Model -> Html Msg
 viewBuffArea model =
     div [ class "container" ]
-        [ h2 [] [ text "バフエリア" ]
-        , h3 [] [ text "各ステータスバフ（アクティブ・パッシブ）" ]
-        , table [ class "table" ]
-            [ thead []
-                [ tr []
-                    [ th [] [ text "Vocalバフ" ]
-                    , th [] [ text "Danceバフ" ]
-                    , th [] [ text "Visualバフ" ]
-                    ]
-                ]
-            , tbody []
-                [ tr []
-                    [ td [] [ viewBuffSlider Vo model ]
-                    , td [] [ viewBuffSlider Da model ]
-                    , td [] [ viewBuffSlider Vi model ]
-                    ]
-                ]
-            ]
-        , h3 [] [ text "G.R.A.D.バフ" ]
-        , table [ class "table", class "table-sm" ]
+        [ h2 [] [ text "G.R.A.D.バフ" ]
+        , table [ class "table table-sm" ]
             [ thead []
                 [ tr []
                     [ th [] [ text "アビリティ" ]
                     , th [] [ text "所持数" ]
-                    , th [ colspan 2 ] [ text "パラメータ" ]
                     , th [] [ text "バフ合計" ]
                     ]
                 ]
@@ -838,8 +841,6 @@ viewBuffArea model =
                 ([ tr []
                     [ td [] [ text (gradAbilityToString Startdash) ]
                     , td [] [ text (countAbility model Startdash |> String.fromInt) ]
-                    , td [ rowspan 2 ] [ text "経過ターン数" ]
-                    , td [ rowspan 2 ] [ viewTurnSlider model ]
                     , td [] [ text (((calcGradAbiiltyBuff Startdash model.condition * Basics.toFloat (countAbility model Startdash)) |> Round.round 1) ++ "%") ]
                     ]
                  , tr []
@@ -850,8 +851,6 @@ viewBuffArea model =
                  , tr []
                     [ td [] [ text (gradAbilityToString AppealUp_theMoreMemoryGauge) ]
                     , td [] [ text (countAbility model AppealUp_theMoreMemoryGauge |> String.fromInt) ]
-                    , td [ rowspan 2 ] [ text "思い出ゲージ" ]
-                    , td [ rowspan 2 ] [ viewMemoryGaugeSlider model ]
                     , td [] [ text (((calcGradAbiiltyBuff AppealUp_theMoreMemoryGauge model.condition * Basics.toFloat (countAbility model AppealUp_theMoreMemoryGauge)) |> Round.round 1) ++ "%") ]
                     ]
                  , tr []
@@ -916,67 +915,62 @@ calcGradAbiiltyBuff ability condition =
 
 viewBondsArea : Model -> List (Html msg)
 viewBondsArea model =
-    let
-        bondsCount =
-            List.map BondsWith [ model.leader.idol, model.vocalist.idol, model.center.idol, model.dancer.idol, model.visualist.idol ]
-                |> List.map (countAbility model)
-                |> List.sum
-    in
-    [ tr []
-        [ td [] [ text (Idol.toFullName model.leader.idol ++ "との絆") ]
-        , td [ rowspan 5, colspan 3 ]
-            [ text (String.fromInt bondsCount)
-            ]
-        , td [ rowspan 5 ]
-            [ text (((bondsCount * 5) |> Basics.toFloat |> Round.round 1) ++ "%") ]
-        ]
-    , tr []
-        [ td [ colspan 4 ] [ text (Idol.toFullName model.vocalist.idol ++ "との絆") ]
-        ]
-    , tr []
-        [ td [ colspan 4 ] [ text (Idol.toFullName model.center.idol ++ "との絆") ]
-        ]
-    , tr []
-        [ td [ colspan 4 ] [ text (Idol.toFullName model.dancer.idol ++ "との絆") ]
-        ]
-    , tr []
-        [ td [ colspan 4 ] [ text (Idol.toFullName model.visualist.idol ++ "との絆") ]
-        ]
+    [ viewBondsBuffRow model model.leader.idol
+    , viewBondsBuffRow model model.vocalist.idol
+    , viewBondsBuffRow model model.center.idol
+    , viewBondsBuffRow model model.dancer.idol
+    , viewBondsBuffRow model model.visualist.idol
     ]
+
+
+viewBondsBuffRow : Model -> Idol.Idol -> Html msg
+viewBondsBuffRow model idol =
+    tr []
+        [ td [] [ text (Idol.toFullName idol ++ "との絆") ]
+        , td [] [ text (String.fromInt (countAbility model (BondsWith idol))) ]
+        , td [] [ text (((countAbility model (BondsWith idol) * 5) |> Basics.toFloat |> Round.round 1) ++ "%") ]
+        ]
 
 
 viewTurnSlider : Model -> Html Msg
 viewTurnSlider model =
-    div []
-        [ input
-            [ type_ "range"
-            , Html.Attributes.min "1"
-            , Html.Attributes.max "10"
-            , step "1"
-            , value (model.condition.turnCount |> String.fromInt)
-            , onInput (ChangeCondition TurnCount)
-            ]
-            []
-        , input [ style "width" "4em", value (model.condition.turnCount |> String.fromInt), onInput (ChangeCondition TurnCount) ] []
-        , text "ターン目"
+    input
+        [ type_ "range"
+        , Html.Attributes.min "1"
+        , Html.Attributes.max "10"
+        , step "1"
+        , value (model.condition.turnCount |> String.fromInt)
+        , onInput (ChangeCondition TurnCount)
         ]
+        []
+
+
+viewTurnInput : Model -> Html Msg
+viewTurnInput model =
+    input [ style "width" "4em", value (model.condition.turnCount |> String.fromInt), onInput (ChangeCondition TurnCount) ] []
 
 
 viewMemoryGaugeSlider : Model -> Html Msg
 viewMemoryGaugeSlider model =
-    div []
-        [ input
-            [ type_ "range"
-            , Html.Attributes.min "0"
-            , Html.Attributes.max "100"
-            , step "5"
-            , value (model.condition.memoryGaugePercentage |> String.fromInt)
-            , onInput (ChangeCondition MemoryGaugePercentage)
-            ]
-            []
-        , input [ style "width" "4em", value (model.condition.memoryGaugePercentage |> String.fromInt), onInput (ChangeCondition MemoryGaugePercentage) ] []
-        , text "%"
+    input
+        [ type_ "range"
+        , Html.Attributes.min "0"
+        , Html.Attributes.max "100"
+        , step "5"
+        , value (model.condition.memoryGaugePercentage |> String.fromInt)
+        , onInput (ChangeCondition MemoryGaugePercentage)
         ]
+        []
+
+
+viewMemoryGaugeInput : Model -> Html Msg
+viewMemoryGaugeInput model =
+    input
+        [ style "width" "4em"
+        , value (model.condition.memoryGaugePercentage |> String.fromInt)
+        , onInput (ChangeCondition MemoryGaugePercentage)
+        ]
+        []
 
 
 viewBuffSlider : AppealType -> Model -> Html Msg
@@ -1013,35 +1007,6 @@ getBuff buffs appealType =
 {-
    viewAppealArea : アピールするアイドル、PerFect/Good/Normal/Bad、Vo/Da/Vi倍率を選択するエリア
 -}
-
-
-viewAppealArea : Model -> Html Msg
-viewAppealArea model =
-    div [ class "container" ]
-        [ h2 [] [ text "アピール倍率指定エリア" ]
-        , table [ class "table" ]
-            [ thead []
-                [ tr []
-                    [ th [] [ text "アピールするアイドル" ]
-                    , th [] [ text "アピール係数" ]
-                    , th [] [ text "Vo倍率" ]
-                    , th [] [ text "Da倍率" ]
-                    , th [] [ text "Vi倍率" ]
-                    , th [] [ text "思い出アピール" ]
-                    ]
-                ]
-            , tbody []
-                [ tr []
-                    [ td [] [ viewAppealIdolPulldown model ]
-                    , td [] [ viewAppealCoefficient model ]
-                    , td [] [ viewAppealPower Vo model ]
-                    , td [] [ viewAppealPower Da model ]
-                    , td [] [ viewAppealPower Vi model ]
-                    , td [] [ viewMemoryAppeal model ]
-                    ]
-                ]
-            ]
-        ]
 
 
 viewAppealIdolPulldown : Model -> Html Msg
@@ -1085,13 +1050,8 @@ viewAppealPower appealType model =
             ]
             []
         , input [ style "width" "4em", value (appealPower model appealType |> String.fromFloat), onInput (ChangeAppealPower appealType) ] []
+        , text "倍"
         ]
-
-
-viewMemoryAppeal : Model -> Html Msg
-viewMemoryAppeal model =
-    div []
-        [ viewMemoryAppealPullDown model.idolAppealParam.memoryCoefficient ]
 
 
 viewMemoryAppealPullDown : Float -> Html Msg
@@ -1108,35 +1068,6 @@ viewMemoryAppealPullDown memoryAppealCoefficient =
 {-
    viewBonusedFesUnitArea : ボーナス適用後のステータスを表示するエリア
 -}
-
-
-viewBonusedFesUnitArea : Model -> Html Msg
-viewBonusedFesUnitArea model =
-    div [ class "container" ]
-        [ h2 [] [ text "ボーナス適用後のステータス" ]
-        , table [ class "table", class "table-sm" ]
-            [ thead []
-                [ tr []
-                    [ th [] []
-                    , th [] [ text "Leader" ]
-                    , th [] [ text "Vocal担当" ]
-                    , th [] [ text "Center" ]
-                    , th [] [ text "Dance担当" ]
-                    , th [] [ text "Visual担当" ]
-                    ]
-                ]
-            , tbody []
-                [ writeFesIdol model
-                , writeFesIdolStatus model Vocal
-                , writeFesIdolStatus model Dance
-                , writeFesIdolStatus model Visual
-                , writeFesIdolStatus model Mental
-                ]
-            ]
-        ]
-
-
-
 {-
    viewFesUnitArea : フェスユニット編成、ステータス設定を行うエリア
 -}
@@ -1145,8 +1076,8 @@ viewBonusedFesUnitArea model =
 viewFesUnitArea : Model -> Html Msg
 viewFesUnitArea model =
     div [ class "container" ]
-        [ h2 [] [ text "フェスユニットのステータス指定エリア" ]
-        , table [ class "table" ]
+        [ h2 [] [ text "フェスユニットステータス" ]
+        , table [ class "table table-sm" ]
             [ thead []
                 [ tr []
                     [ th [] []
@@ -1176,58 +1107,57 @@ viewFesIdolStatus model status =
         rowClass =
             case status of
                 Vocal ->
-                    class "table-danger"
+                    class "table-vocal"
 
                 Dance ->
-                    class "table-primary"
+                    class "table-dance"
 
                 Visual ->
-                    class "table-warning"
+                    class "table-visual"
+
+                Mental ->
+                    class "table-mental"
 
                 _ ->
                     class "table-light"
+
+        bonusAppliedModel =
+            applyBonus model
     in
     tr [ rowClass ]
-        [ td [] [ text (statusHeader status) ]
-        , td [] [ input [ style "width" "4em", value (getStatus (getFesIdol model Leader) status), onInput (ChangeFesIdolStatus Leader status) ] [] ]
-        , td [] [ input [ style "width" "4em", value (getStatus (getFesIdol model Vocalist) status), onInput (ChangeFesIdolStatus Vocalist status) ] [] ]
-        , td [] [ input [ style "width" "4em", value (getStatus (getFesIdol model Center) status), onInput (ChangeFesIdolStatus Center status) ] [] ]
-        , td [] [ input [ style "width" "4em", value (getStatus (getFesIdol model Dancer) status), onInput (ChangeFesIdolStatus Dancer status) ] [] ]
-        , td [] [ input [ style "width" "4em", value (getStatus (getFesIdol model Visualist) status), onInput (ChangeFesIdolStatus Visualist status) ] [] ]
-        ]
-
-
-writeFesIdolStatus : Model -> FesIdolStatus -> Html msg
-writeFesIdolStatus model status =
-    let
-        rowClass =
-            case status of
-                Vocal ->
-                    class "table-danger"
-
-                Dance ->
-                    class "table-primary"
-
-                Visual ->
-                    class "table-warning"
-
-                _ ->
-                    class "table-light"
-    in
-    tr [ rowClass ]
-        [ td [] [ text (statusHeader status) ]
-        , td [] [ text (getStatus model.leader status) ]
-        , td [] [ text (getStatus model.vocalist status) ]
-        , td [] [ text (getStatus model.center status) ]
-        , td [] [ text (getStatus model.dancer status) ]
-        , td [] [ text (getStatus model.visualist status) ]
+        [ th [] [ text (statusHeader status) ]
+        , td [ class "fw-bold" ]
+            [ input [ style "width" "4em", value (getStatus (getFesIdol model Leader) status), onInput (ChangeFesIdolStatus Leader status) ] []
+            , text " → "
+            , text (getStatus bonusAppliedModel.leader status)
+            ]
+        , td [ class "fw-bold" ]
+            [ input [ style "width" "4em", value (getStatus (getFesIdol model Vocalist) status), onInput (ChangeFesIdolStatus Vocalist status) ] []
+            , text " → "
+            , text (getStatus bonusAppliedModel.vocalist status)
+            ]
+        , td [ class "fw-bold" ]
+            [ input [ style "width" "4em", value (getStatus (getFesIdol model Center) status), onInput (ChangeFesIdolStatus Center status) ] []
+            , text " → "
+            , text (getStatus bonusAppliedModel.center status)
+            ]
+        , td [ class "fw-bold" ]
+            [ input [ style "width" "4em", value (getStatus (getFesIdol model Dancer) status), onInput (ChangeFesIdolStatus Dancer status) ] []
+            , text " → "
+            , text (getStatus bonusAppliedModel.dancer status)
+            ]
+        , td [ class "fw-bold" ]
+            [ input [ style "width" "4em", value (getStatus (getFesIdol model Visualist) status), onInput (ChangeFesIdolStatus Visualist status) ] []
+            , text " → "
+            , text (getStatus bonusAppliedModel.visualist status)
+            ]
         ]
 
 
 viewFesIdolMemoryLevel : Model -> Html Msg
 viewFesIdolMemoryLevel model =
     tr []
-        [ td [] [ text (statusHeader MemoryLevel) ]
+        [ th [] [ text (statusHeader MemoryLevel) ]
         , td [] [ viewMemoryLevelPullDown (getFesIdol model Leader) Leader ]
         , td [] [ viewMemoryLevelPullDown (getFesIdol model Vocalist) Vocalist ]
         , td [] [ viewMemoryLevelPullDown (getFesIdol model Center) Center ]
@@ -1259,7 +1189,7 @@ viewMemoryLevelOption selectedLevel memoryLevel =
 viewGradAbilities : Model -> Html Msg
 viewGradAbilities model =
     tr []
-        [ td [] [ text "G.R.A.D.アビリティ" ]
+        [ th [] [ text "G.R.A.D.アビリティ" ]
         , td [] [ viewGradAbilitiesOf Leader model.leader.gradAbilities ]
         , td [] [ viewGradAbilitiesOf Vocalist model.vocalist.gradAbilities ]
         , td [] [ viewGradAbilitiesOf Center model.center.gradAbilities ]
@@ -1302,24 +1232,12 @@ viewAbility position selectedAbilities abilityType =
 viewFesIdol : Model -> Html Msg
 viewFesIdol model =
     tr [ class "table-info" ]
-        [ td [] [ text (statusHeader Idol) ]
+        [ th [] [ text (statusHeader Idol) ]
         , td [] [ viewIdolPullDown (getFesIdol model Leader) Leader ]
         , td [] [ viewIdolPullDown (getFesIdol model Vocalist) Vocalist ]
         , td [] [ viewIdolPullDown (getFesIdol model Center) Center ]
         , td [] [ viewIdolPullDown (getFesIdol model Dancer) Dancer ]
         , td [] [ viewIdolPullDown (getFesIdol model Visualist) Visualist ]
-        ]
-
-
-writeFesIdol : Model -> Html Msg
-writeFesIdol model =
-    tr [ class "table-info" ]
-        [ td [] [ text (statusHeader Idol) ]
-        , td [] [ text (Idol.toString model.leader.idol) ]
-        , td [] [ text (Idol.toString model.vocalist.idol) ]
-        , td [] [ text (Idol.toString model.center.idol) ]
-        , td [] [ text (Idol.toString model.dancer.idol) ]
-        , td [] [ text (Idol.toString model.visualist.idol) ]
         ]
 
 
