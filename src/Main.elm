@@ -2,7 +2,7 @@ module Main exposing (Buffs, MemoryLevel, Model, getStatus, main, update, viewId
 
 import Browser
 import Html exposing (..)
-import Html.Attributes exposing (checked, class, colspan, max, min, rowspan, selected, step, style, type_, value)
+import Html.Attributes exposing (checked, class, selected, step, style, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Html.Events.Extra as Events
 import Html.Extra as Html
@@ -563,25 +563,25 @@ viewJudgeArea model =
             [ thead []
                 [ tr []
                     [ th [] []
-                    , th [ class "table-danger" ] [ text "Voアピール" ]
-                    , th [ class "table-primary" ] [ text "Daアピール" ]
-                    , th [ class "table-warning" ] [ text "Viアピール" ]
+                    , th [ class "table-vocal" ] [ text "Voアピール" ]
+                    , th [ class "table-dance" ] [ text "Daアピール" ]
+                    , th [ class "table-visual" ] [ text "Viアピール" ]
                     , th [ class "table-info" ]
                         [ text "思い出アピール"
                         ]
                     ]
                 , tr []
                     [ th [] []
-                    , th [ class "table-danger" ] [ viewAppealPower Vo model ]
-                    , th [ class "table-primary" ] [ viewAppealPower Da model ]
-                    , th [ class "table-warning" ] [ viewAppealPower Vi model ]
+                    , th [ class "table-vocal" ] [ viewAppealPower Vo model ]
+                    , th [ class "table-dance" ] [ viewAppealPower Da model ]
+                    , th [ class "table-visual" ] [ viewAppealPower Vi model ]
                     , th [ class "table-info" ] [ viewMemoryAppealPullDown model.idolAppealParam.memoryCoefficient ]
                     ]
                 , tr []
                     [ th [] [ text "バフ合計" ]
-                    , th [ class "table-danger" ] [ viewBuffSlider Vo model ]
-                    , th [ class "table-primary" ] [ viewBuffSlider Da model ]
-                    , th [ class "table-warning" ] [ viewBuffSlider Vi model ]
+                    , th [ class "table-vocal" ] [ viewBuffSlider Vo model ]
+                    , th [ class "table-dance" ] [ viewBuffSlider Da model ]
+                    , th [ class "table-visual" ] [ viewBuffSlider Vi model ]
                     , th [ class "table-info" ] []
                     ]
                 ]
@@ -595,6 +595,11 @@ viewJudgeArea model =
             [ li [ class "list-group-item col-sm" ] [ text "アピールアイドル : ", viewAppealIdolPulldown model ]
             , li [ class "list-group-item col-sm" ] [ text "係数 : ", viewAppealCoefficient model ]
             ]
+        , strong [] [ text ("合計G.R.A.D.バフ : " ++ (calcGradBuff model |> Round.round 1) ++ " %") ]
+        , ul [ class "list-group list-group-horizontal row" ]
+            [ li [ class "list-group-item col-sm" ] [ text "経過ターン数 : ", viewTurnSlider model, viewTurnInput model, text "ターン目" ] ]
+        , ul [ class "list-group list-group-horizontal row" ]
+            [ li [ class "list-group-item col-sm" ] [ text "思い出ゲージ : ", viewMemoryGaugeSlider model, viewMemoryGaugeInput model, text "%" ] ]
         ]
 
 
@@ -610,13 +615,13 @@ viewJudge judgeType model =
         cssClass =
             case judgeType of
                 Vo ->
-                    class "table-danger"
+                    class "table-vocal"
 
                 Da ->
-                    class "table-primary"
+                    class "table-dance"
 
                 Vi ->
-                    class "table-warning"
+                    class "table-visual"
     in
     tr []
         [ th [ cssClass ] [ text (typeHeader judgeType ++ "審査員") ]
@@ -824,14 +829,6 @@ viewBuffArea : Model -> Html Msg
 viewBuffArea model =
     div [ class "container" ]
         [ h2 [] [ text "G.R.A.D.バフ" ]
-        , ul [ class "list-group list-group-horizontal row" ]
-            [ li [ class "list-group-item col-sm" ] [ text "経過ターン数" ]
-            , li [ class "list-group-item col-sm" ] [ viewTurnSlider model ]
-            ]
-        , ul [ class "list-group list-group-horizontal row" ]
-            [ li [ class "list-group-item col-sm" ] [ text "思い出ゲージ" ]
-            , li [ class "list-group-item col-sm" ] [ viewMemoryGaugeSlider model ]
-            ]
         , table [ class "table table-sm" ]
             [ thead []
                 [ tr []
@@ -937,36 +934,43 @@ viewBondsBuffRow model idol =
 
 viewTurnSlider : Model -> Html Msg
 viewTurnSlider model =
-    div []
-        [ input
-            [ type_ "range"
-            , Html.Attributes.min "1"
-            , Html.Attributes.max "10"
-            , step "1"
-            , value (model.condition.turnCount |> String.fromInt)
-            , onInput (ChangeCondition TurnCount)
-            ]
-            []
-        , input [ style "width" "4em", value (model.condition.turnCount |> String.fromInt), onInput (ChangeCondition TurnCount) ] []
-        , text "ターン目"
+    input
+        [ type_ "range"
+        , Html.Attributes.min "1"
+        , Html.Attributes.max "10"
+        , step "1"
+        , value (model.condition.turnCount |> String.fromInt)
+        , onInput (ChangeCondition TurnCount)
         ]
+        []
+
+
+viewTurnInput : Model -> Html Msg
+viewTurnInput model =
+    input [ style "width" "4em", value (model.condition.turnCount |> String.fromInt), onInput (ChangeCondition TurnCount) ] []
 
 
 viewMemoryGaugeSlider : Model -> Html Msg
 viewMemoryGaugeSlider model =
-    div []
-        [ input
-            [ type_ "range"
-            , Html.Attributes.min "0"
-            , Html.Attributes.max "100"
-            , step "5"
-            , value (model.condition.memoryGaugePercentage |> String.fromInt)
-            , onInput (ChangeCondition MemoryGaugePercentage)
-            ]
-            []
-        , input [ style "width" "4em", value (model.condition.memoryGaugePercentage |> String.fromInt), onInput (ChangeCondition MemoryGaugePercentage) ] []
-        , text "%"
+    input
+        [ type_ "range"
+        , Html.Attributes.min "0"
+        , Html.Attributes.max "100"
+        , step "5"
+        , value (model.condition.memoryGaugePercentage |> String.fromInt)
+        , onInput (ChangeCondition MemoryGaugePercentage)
         ]
+        []
+
+
+viewMemoryGaugeInput : Model -> Html Msg
+viewMemoryGaugeInput model =
+    input
+        [ style "width" "4em"
+        , value (model.condition.memoryGaugePercentage |> String.fromInt)
+        , onInput (ChangeCondition MemoryGaugePercentage)
+        ]
+        []
 
 
 viewBuffSlider : AppealType -> Model -> Html Msg
@@ -1103,13 +1107,16 @@ viewFesIdolStatus model status =
         rowClass =
             case status of
                 Vocal ->
-                    class "table-danger"
+                    class "table-vocal"
 
                 Dance ->
-                    class "table-primary"
+                    class "table-dance"
 
                 Visual ->
-                    class "table-warning"
+                    class "table-visual"
+
+                Mental ->
+                    class "table-mental"
 
                 _ ->
                     class "table-light"
