@@ -1,0 +1,25 @@
+{
+  "name": "shiny-colors-appeal-simulator",
+  "version": "1.0.0",
+  "description": "シャニマスのアピール値シミュレータです。\r [シャニマス攻略 wiki：仕様考察](https://wikiwiki.jp/shinycolors/%E4%BB%95%E6%A7%98%E8%80%83%E5%AF%9F) （2020/09/20 23:44 時点）\r に記載のアピール値の計算式に準拠しています。",
+  "main": "index.js",
+  "dependencies": {
+    "@popperjs/core": "^2.9.0",
+    "bootstrap": "^5.0.0-beta2",
+    "sass": "^1.32.8"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RyujiYamamoto/shiny-colors-appeal-simulator.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/RyujiYamamoto/shiny-colors-appeal-simulator/issues"
+  },
+  "homepage": "https://github.com/RyujiYamamoto/shiny-colors-appeal-simulator#readme"
+}
