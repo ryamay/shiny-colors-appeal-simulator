@@ -6211,9 +6211,9 @@ var $elm$html$Html$text = $elm$virtual_dom$VirtualDom$text;
 var $author$project$Main$calcGradAbiiltyBuff = F2(
 	function (ability, condition) {
 		switch (ability.$) {
-			case 'Startdash':
-				return ((condition.turnCount > 0) && (condition.turnCount <= 10)) ? (4.0 + ((16.0 / 9.0) * (condition.turnCount - 1))) : ((condition.turnCount > 10) ? 20.0 : 0.0);
 			case 'Slowstarter':
+				return ((condition.turnCount > 0) && (condition.turnCount <= 10)) ? (4.0 + ((16.0 / 9.0) * (condition.turnCount - 1))) : ((condition.turnCount > 10) ? 20.0 : 0.0);
+			case 'Startdash':
 				return ((condition.turnCount > 0) && (condition.turnCount <= 10)) ? (10.0 - ((8.0 / 9.0) * (condition.turnCount - 1))) : ((condition.turnCount > 10) ? 2.0 : 0);
 			case 'AppealUp_theMoreMemoryGauge':
 				return ((condition.memoryGaugePercentage >= 0) && (condition.memoryGaugePercentage <= 100)) ? (2.0 + ((8.0 * condition.memoryGaugePercentage) / 100.0)) : 0;
