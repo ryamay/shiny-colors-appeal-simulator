@@ -875,7 +875,7 @@ countAbility model ability =
 calcGradAbiiltyBuff : GradAbility -> Condition -> Float
 calcGradAbiiltyBuff ability condition =
     case ability of
-        Startdash ->
+        Slowstarter ->
             if condition.turnCount > 0 && condition.turnCount <= 10 then
                 4.0 + 16.0 / 9.0 * Basics.toFloat (condition.turnCount - 1)
 
@@ -885,7 +885,7 @@ calcGradAbiiltyBuff ability condition =
             else
                 0.0
 
-        Slowstarter ->
+        Startdash ->
             if condition.turnCount > 0 && condition.turnCount <= 10 then
                 10.0 - 8.0 / 9.0 * Basics.toFloat (condition.turnCount - 1)
 
